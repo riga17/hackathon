@@ -1,141 +1,298 @@
 (function () {
   'use strict';
-  const FK = 'priority.focus', TK = 'priorityBoard.v1', P = window.Priority, C = 2 * Math.PI * 120;
+  const KEY = 'priorityBoard.v1', FK = 'priorityFocus.v1', P = window.Priority;
   const $ = (id) => document.getElementById(id);
   const pad = (n) => String(n).padStart(2, '0');
   const ds = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   const today = ds(new Date());
-  const MODES = { pomo: [25, 5, 'Pomodoro 25/5'], deep: [50, 10, 'Deep work 50/10'], quick: [15, 3, 'Quick 15/3'], custom: [0, 0, 'Custom'] };
-  const S = { mode: 'pomo', custom: [30, 5], auto: false, task: '', log: {} };
-  try { Object.assign(S, JSON.parse(localStorage.getItem(FK)) || {}); } catch (e) {}
-  const saveS = () => { try { localStorage.setItem(FK, JSON.stringify(S)); } catch (e) {} };
-  let tasks = [], phase = 'focus', total = 1500, left = 1500, endAt = 0, tick = null;
+  const icn = (name, size) => (window.PriorityIcon ? PriorityIcon(name, size) : '');
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
-  const lens = () => (S.mode === 'custom' ? S.custom : MODES[S.mode]);
-  const loadTasks = () => { try { const r = JSON.parse(localStorage.getItem(TK)); tasks = Array.isArray(r) ? r : []; } catch (e) { tasks = []; } };
-  const saveTasks = () => { try { localStorage.setItem(TK, JSON.stringify(tasks)); } catch (e) {} };
+  const menuBtn = $('menu-btn');
+  if (menuBtn) menuBtn.innerHTML = icn('grid', 20);
+  const zenBtn = $('zen-btn');
+  if (zenBtn) zenBtn.innerHTML = icn('eye', 20);
+  const zenExit = $('zen-exit');
+  if (zenExit) zenExit.innerHTML = icn('x', 20);
 
-  /* ----- Stats ----- */
-  function stats() {
-    const t = S.log[today] || { n: 0, m: 0 };
-    $('s-n').textContent = t.n; $('s-m').textContent = t.m + ' min';
-    $('s-all').textContent = Object.values(S.log).reduce((a, d) => a + d.n, 0);
-  }
-  function logSession() {
-    const d = S.log[today] || (S.log[today] = { n: 0, m: 0 });
-    d.n++; d.m += Math.round(total / 60); saveS(); stats();
+  /* ----- State ----- */
+  let tasks = [];
+  try { const r = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(r)) tasks = r; } catch (e) {}
+
+  const FS = {
+    taskId: '',
+    minutes: 25,
+    type: 'focus',
+    count: 0,
+    countDay: today,
+    history: []
+  };
+  try { Object.assign(FS, JSON.parse(localStorage.getItem(FK)) || {}); } catch (e) {}
+  if (FS.countDay !== today) { FS.count = 0; FS.countDay = today; FS.history = []; }
+  const saveFS = () => { try { localStorage.setItem(FK, JSON.stringify(FS)); } catch (e) {} };
+
+  let secs = FS.minutes * 60;
+  let tick = null;
+  let mode = 'idle'; // idle | running | paused
+  let zenActive = false;
+
+  function currentTask() { return tasks.find((t) => t.id === FS.taskId); }
+  function fmtClock() { return pad(Math.floor(secs / 60)) + ':' + pad(secs % 60); }
+
+  /* =========================================================
+     Render
+     ========================================================= */
+  function render() {
+    const t = currentTask();
+    const label = $('focus-label');
+    const timer = $('focus-timer');
+
+    let txt = 'Ready to focus', cls = '';
+    if (mode === 'running') txt = FS.type === 'break' ? 'On a break' : 'Focusing';
+    else if (mode === 'paused') txt = 'Paused';
+    if (mode === 'paused') cls = ' paused';
+    else if (FS.type === 'break') cls = ' break';
+    label.textContent = txt;
+    label.className = 'focus-label' + cls;
+
+    timer.className = 'focus-timer' + (mode === 'running' ? ' running' : mode === 'paused' ? ' paused' : FS.type === 'break' ? ' break' : '');
+    timer.textContent = fmtClock();
+
+    $('focus-streak').textContent = FS.count ? FS.count + ' session' + (FS.count === 1 ? '' : 's') + ' today' : '';
+
+    if (FS.type === 'break') {
+      $('ft-eyebrow') || null;
+      $('ft-title').textContent = 'Take a break';
+      $('ft-sub').textContent = 'Step away from the screen for a moment.';
+      $('pick-btn').hidden = true;
+    } else {
+      $('ft-title').textContent = t ? t.title : 'No task selected';
+      $('ft-sub').textContent = t ? 'In your Now list' : 'Pick something from your Now list to begin.';
+      $('pick-btn').hidden = false;
+      $('pick-btn').textContent = t ? 'Change task' : 'Choose a task';
+    }
+
+    const typeLabel = FS.type === 'focus' ? 'Focus' : FS.type === 'break' ? 'Break' : 'Custom';
+    $('stat-type').textContent = typeLabel;
+    $('stat-length').textContent = FS.minutes + ' min';
+    $('stat-task').textContent = FS.type === 'break' ? '—' : (t ? t.title : 'None');
+    $('stat-count').textContent = FS.count;
+    const totalMin = FS.history.reduce((s, h) => s + h.minutes, 0);
+    $('stat-total').textContent = totalMin + ' min';
+
+    $('start-btn').textContent = mode === 'running' ? 'Restart' : mode === 'paused' ? 'Resume' : 'Start focus';
+    $('pause-btn').hidden = mode !== 'running';
+
+    document.querySelectorAll('.seg').forEach((b) => {
+      const matchesType = b.dataset.type === FS.type;
+      const matchesMin = b.dataset.min === 'custom' ? FS.custom : +b.dataset.min === FS.minutes;
+      b.classList.toggle('on', matchesType && matchesMin);
+      b.classList.toggle('break', b.dataset.type === 'break');
+    });
+
+    renderHistory();
+    if (zenActive) renderZen();
   }
 
-  /* ----- Timer ----- */
-  function draw() {
-    const m = Math.floor(left / 60), s = left % 60;
-    $('clock').textContent = pad(m) + ':' + pad(s);
-    $('prog').style.strokeDashoffset = C * (1 - left / total);
-    document.title = (tick ? pad(m) + ':' + pad(s) + ' · ' : '') + (phase === 'focus' ? 'Focus' : 'Break') + ' · Priority';
-    $('stage').classList.toggle('is-break', phase === 'break');
-    $('phase').textContent = phase === 'focus' ? 'Focus time' : 'Break time. Stretch and breathe.';
+  function renderHistory() {
+    const ul = $('focus-history'); ul.textContent = '';
+    if (!FS.history.length) {
+      ul.append(el('li', 'empty', 'No sessions yet today. Start one up.'));
+      return;
+    }
+    FS.history.slice().reverse().forEach((h) => {
+      const li = el('li');
+      li.append(el('span', null, h.title || (h.type === 'break' ? 'Break' : 'Focus session')));
+      li.append(el('span', 'meta', h.minutes + ' min · ' + h.time));
+      ul.append(li);
+    });
   }
-  function setPhase(p) { phase = p; total = left = lens()[p === 'focus' ? 0 : 1] * 60; draw(); }
-  function stopTick() { clearInterval(tick); tick = null; }
-  function beep() {
-    try {
-      const c = new (window.AudioContext || window.webkitAudioContext)();
-      [0, 0.35].forEach((t) => {
-        const o = c.createOscillator(), g = c.createGain();
-        o.frequency.value = 880; g.gain.setValueAtTime(0.2, c.currentTime + t); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + t + 0.3);
-        o.connect(g); g.connect(c.destination); o.start(c.currentTime + t); o.stop(c.currentTime + t + 0.32);
-      });
-      setTimeout(() => c.close(), 1200);
-    } catch (e) {}
+
+  function renderZen() {
+    $('zen-task').textContent = FS.type === 'break' ? 'Take a break' : (currentTask() ? currentTask().title : 'Take a breath and focus.');
+    $('zen-label').textContent = FS.type === 'break' ? 'Break time' : 'Focusing on';
+    const t = $('zen-timer');
+    t.className = 'zen-timer' + (mode === 'paused' ? ' paused' : FS.type === 'break' ? ' break' : '');
+    t.textContent = fmtClock();
+    $('zen-toggle').textContent = mode === 'running' ? 'Pause' : mode === 'paused' ? 'Resume' : 'Start';
   }
+
+  /* =========================================================
+     Timer
+     ========================================================= */
+  function stopTick() { if (tick) { clearInterval(tick); tick = null; } }
+
   function start() {
-    endAt = Date.now() + left * 1000; $('go').textContent = 'Pause';
-    clearInterval(tick);
+    if (mode === 'running') return;
+    if (secs <= 0) secs = FS.minutes * 60;
+    mode = 'running';
+    render();
     tick = setInterval(() => {
-      left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000)); draw();
-      if (left <= 0) finish();
-    }, 250);
+      secs--;
+      $('focus-timer').textContent = fmtClock();
+      if (zenActive) $('zen-timer').textContent = fmtClock();
+      if (secs <= 0) finish();
+    }, 1000);
+  }
+  function pause() {
+    if (mode !== 'running') return;
+    stopTick();
+    mode = 'paused';
+    render();
+  }
+  function reset() {
+    stopTick();
+    secs = FS.minutes * 60;
+    mode = 'idle';
+    render();
   }
   function finish() {
-    stopTick(); beep();
-    if (phase === 'focus') { logSession(); P.toast('Session complete. Time for a break.'); setPhase('break'); }
-    else { P.toast('Break over. Ready for the next round?'); setPhase('focus'); }
-    $('go').textContent = 'Start';
-    if (S.auto) start();
+    stopTick();
+    secs = 0;
+    mode = 'idle';
+    const t = currentTask();
+    FS.count++;
+    FS.history.push({
+      title: FS.type === 'break' ? 'Break' : (t ? t.title : 'Focus session'),
+      minutes: FS.minutes,
+      type: FS.type,
+      time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    });
+    saveFS();
+    P.toast(FS.type === 'break' ? 'Break over. Back to it.' : 'Session complete. Take a break.');
+    if (window.PriorityAchievements) PriorityAchievements.addFocusSession();
+    render();
+    setTimeout(() => { secs = FS.minutes * 60; render(); }, 1500);
   }
-  function toggle() {
-    if (tick) { stopTick(); left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000)); $('go').textContent = 'Resume'; draw(); }
-    else start();
-  }
-  function reset() { stopTick(); setPhase('focus'); $('go').textContent = 'Start'; }
-  function skip() { stopTick(); setPhase(phase === 'focus' ? 'break' : 'focus'); $('go').textContent = 'Start'; }
 
-  /* ----- Modes ----- */
-  function renderModes() {
-    $('modes').innerHTML = Object.keys(MODES).map((k) => '<button type="button" class="seg' + (S.mode === k ? ' on' : '') + '" data-m="' + k + '">' + MODES[k][2] + '</button>').join('');
-    $('custom').hidden = S.mode !== 'custom';
+  /* =========================================================
+     Task picker
+     ========================================================= */
+  const dlg = $('pick-dialog');
+  function openPicker() {
+    const ul = $('pick-list'); ul.textContent = '';
+    const now = tasks.filter((t) => t.list === 'now');
+    if (!now.length) {
+      ul.append(el('li', 'empty', 'Your Now list is empty. Add tasks in My Tasks.'));
+    } else {
+      now.forEach((t) => {
+        const li = el('li', t.priority);
+        li.append(el('span', 'prio'), el('span', null, t.title));
+        li.onclick = () => { FS.taskId = t.id; saveFS(); dlg.close(); render(); };
+        ul.append(li);
+      });
+    }
+    dlg.showModal();
   }
-  $('modes').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-m]'); if (!b) return;
-    if (tick) { P.toast('Pause or reset the timer to change style.'); return; }
-    S.mode = b.dataset.m; saveS(); renderModes(); setPhase('focus');
+  $('pick-cancel').onclick = () => dlg.close();
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  $('pick-btn').onclick = openPicker;
+
+  /* =========================================================
+     Presets
+     ========================================================= */
+  document.querySelectorAll('.seg').forEach((b) => {
+    b.addEventListener('click', () => {
+      if (b.dataset.min === 'custom') { openCustom(); return; }
+      if (mode === 'running' && !confirm('Changing the timer will reset the current session. Continue?')) return;
+      stopTick();
+      FS.minutes = +b.dataset.min;
+      FS.type = b.dataset.type;
+      FS.custom = false;
+      saveFS();
+      secs = FS.minutes * 60;
+      mode = 'idle';
+      render();
+    });
   });
-  ['c-focus', 'c-break'].forEach((id, i) => $(id).addEventListener('change', (e) => {
-    S.custom[i] = Math.max(1, Math.min(i ? 60 : 180, +e.target.value || 1)); e.target.value = S.custom[i]; saveS();
-    if (!tick) setPhase(phase);
-  }));
 
-  /* ----- Task picker ----- */
-  function renderTasks() {
-    const open = tasks.filter((t) => t.list !== 'done').sort((a, b) => (a.list === 'now' ? 0 : 1) - (b.list === 'now' ? 0 : 1));
-    const sel = $('task-sel');
-    sel.innerHTML = '<option value="">Free focus (no task)</option>' + open.map((t) => '<option value="' + t.id + '"></option>').join('');
-    [...sel.options].slice(1).forEach((o, i) => { o.textContent = (open[i].list === 'now' ? '🔥 ' : '') + open[i].title; });
-    sel.value = open.some((t) => t.id === S.task) ? S.task : '';
-    S.task = sel.value;
-    const t = tasks.find((x) => x.id === S.task);
-    $('now-task').textContent = t ? t.title : 'Free focus';
-    $('task-done').disabled = !t;
+  /* =========================================================
+     Custom timer
+     ========================================================= */
+  const customDlg = $('custom-dialog');
+  const range = $('custom-range');
+  const out = $('custom-out');
+  range.addEventListener('input', () => { out.textContent = range.value + ' min'; });
+  document.querySelectorAll('.custom-quick button').forEach((b) => {
+    b.addEventListener('click', () => {
+      range.value = b.dataset.m;
+      out.textContent = range.value + ' min';
+    });
+  });
+  function openCustom() {
+    range.value = FS.minutes;
+    out.textContent = FS.minutes + ' min';
+    customDlg.showModal();
   }
-  $('task-sel').onchange = (e) => { S.task = e.target.value; saveS(); renderTasks(); };
-  $('task-done').onclick = () => {
-    const t = tasks.find((x) => x.id === S.task); if (!t) return;
-    t.list = 'done'; saveTasks(); S.task = ''; saveS(); renderTasks(); P.toast('Task completed. Great work!');
+  $('custom-cancel').onclick = () => customDlg.close();
+  customDlg.addEventListener('click', (e) => { if (e.target === customDlg) customDlg.close(); });
+  $('custom-start').onclick = () => {
+    if (mode === 'running' && !confirm('Changing the timer will reset the current session. Continue?')) return;
+    stopTick();
+    FS.minutes = +range.value;
+    FS.type = 'focus';
+    FS.custom = true;
+    saveFS();
+    secs = FS.minutes * 60;
+    mode = 'idle';
+    customDlg.close();
+    render();
   };
 
-  /* ----- Music ----- */
-  function renderMusic() {
-    const s = P.get();
-    $('m-tracks').innerHTML = P.music.tracks.map((t) => '<button type="button" data-t="' + t.id + '" class="' + (P.music.on() && s.track === t.id ? 'on' : '') + '">' + t.icon + ' ' + t.name + '</button>').join('');
-    $('m-vol').value = s.vol;
+  /* =========================================================
+     Zen mode
+     ========================================================= */
+  function enterZen() {
+    zenActive = true;
+    $('zen').hidden = false;
+    document.body.style.overflow = 'hidden';
+    renderZen();
   }
-  $('m-tracks').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-t]'); if (!b) return;
-    if (P.music.on() && P.get().track === b.dataset.t) P.music.stop(); else P.music.play(b.dataset.t);
-  });
-  $('m-vol').addEventListener('input', (e) => P.music.setVol(+e.target.value));
-  window.addEventListener('musicchange', renderMusic);
-
-  /* ----- Zen & full screen ----- */
-  function zen(on) { document.body.classList.toggle('zen', on); $('zen').textContent = on ? '✕ Exit zen' : '🧘 Zen mode'; }
-  $('zen').onclick = () => zen(!document.body.classList.contains('zen'));
-  $('fs').onclick = () => {
-    if (!document.fullscreenElement) (document.documentElement.requestFullscreen || function () { return Promise.reject(); }).call(document.documentElement).catch(() => P.toast('Full screen is not available here.'));
-    else document.exitFullscreen();
-  };
-  $('zen').style.display = '';
+  function exitZen() {
+    zenActive = false;
+    $('zen').hidden = true;
+    document.body.style.overflow = '';
+    render();
+  }
+  zenBtn.addEventListener('click', enterZen);
+  zenExit.addEventListener('click', exitZen);
   document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input,textarea,select,button')) return;
-    if (e.key === ' ') { e.preventDefault(); toggle(); }
-    else if (e.key === 'f' || e.key === 'F') zen(!document.body.classList.contains('zen'));
-    else if (e.key === 'Escape') zen(false);
+    if (e.key === 'Escape' && zenActive) exitZen();
   });
 
-  $('go').onclick = toggle; $('skip').onclick = skip; $('reset').onclick = reset;
-  $('auto').checked = S.auto;
-  $('auto').onchange = (e) => { S.auto = e.target.checked; saveS(); };
-  $('c-focus').value = S.custom[0]; $('c-break').value = S.custom[1];
+  $('zen-toggle').onclick = () => { if (mode === 'running') pause(); else start(); };
+  $('zen-reset').onclick = () => reset();
 
-  loadTasks(); renderModes(); renderTasks(); renderMusic(); stats(); setPhase('focus');
-  $('prog').style.strokeDasharray = C;
+  /* =========================================================
+     Actions
+     ========================================================= */
+  $('start-btn').addEventListener('click', () => {
+    if (mode === 'running') { reset(); start(); return; }
+    start();
+  });
+  $('pause-btn').addEventListener('click', pause);
+  $('reset-btn').addEventListener('click', reset);
+  $('clear-history').addEventListener('click', () => {
+    if (!FS.history.length) return;
+    if (!confirm('Clear today\'s session history?')) return;
+    FS.history = [];
+    FS.count = 0;
+    saveFS();
+    render();
+  });
+
+  /* =========================================================
+     Keyboard shortcuts
+     ========================================================= */
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest('input,textarea,select') || dlg.open || customDlg.open) return;
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (mode === 'running') pause(); else start();
+    } else if (e.key === 'r' || e.key === 'R') {
+      reset();
+    }
+  });
+
+  render();
 })();

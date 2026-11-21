@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings · Priority</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="settings.css">
+  <script src="app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="nav-slot"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
+      <div class="ttl"><h1>Settings</h1><p>Make Priority feel like yours.</p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+    </header>
+
+    <!-- Appearance -->
+    <section class="panel">
+      <h2>Appearance</h2>
+      <p>Pick the look that feels easiest on your eyes.</p>
+      <div class="row2" id="modes"></div>
+    </section>
+
+    <!-- Color -->
+    <section class="panel">
+      <h2>Your color</h2>
+      <p>Choose a preset, or slide to find your own. The whole app changes instantly.</p>
+      <div class="row2 swatches" id="swatches"></div>
+      <label class="sr-only" for="hue">Custom color</label>
+      <input class="range" id="hue" type="range" min="0" max="360" step="1">
+      <p class="hint" id="hue-lbl"></p>
+    </section>
+
+    <!-- Music -->
+    <section class="panel">
+      <h2>Music</h2>
+      <p>Calm sounds for studying. Music stops when you leave the page.</p>
+      <div class="tracks" id="tracks"></div>
+      <label for="vol" class="lbl">Volume</label>
+      <input class="range" id="vol" type="range" min="0" max="1" step="0.05">
+      <p class="hint" id="vol-lbl"></p>
+    </section>
+
+    <!-- Sounds & notifications -->
+    <section class="panel">
+      <h2>Sounds &amp; notifications</h2>
+      <p>Control the small cues that keep you on track.</p>
+      <label class="switch">
+        <input type="checkbox" id="cue-sounds">
+        <span class="slider"></span>
+        <span class="lbl">Play a soft sound when a task is completed</span>
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="notify-reminders">
+        <span class="slider"></span>
+        <span class="lbl">Show system notifications for reminders</span>
+      </label>
+      <button class="btn btn-line" id="ask-notify" type="button">Allow notifications</button>
+      <p class="hint" id="notify-state"></p>
+    </section>
+
+    <!-- Defaults -->
+    <section class="panel">
+      <h2>Defaults</h2>
+      <p>Set how new tasks should behave by default.</p>
+      <div class="row2">
+        <label class="field">
+          <span>Default list for new tasks</span>
+          <select id="default-list">
+            <option value="later">Later</option>
+            <option value="now">Now</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Default priority</span>
+          <select id="default-prio">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <!-- Data -->
+    <section class="panel">
+      <h2>Data</h2>
+      <p>Everything is saved on this device only. Nothing leaves your browser.</p>
+      <div class="row2">
+        <button class="btn" id="backup" type="button">Download backup</button>
+        <button class="btn btn-danger" id="reset-appearance" type="button">Reset appearance</button>
+        <button class="btn btn-danger" id="reset-all" type="button">Reset all data</button>
+      </div>
+    </section>
+
+    <p class="about">Priority · a calm place to get things done.</p>
+  </div>
+</div>
+
+<!-- Confirm reset dialog -->
+<dialog id="confirm">
+  <form method="dialog">
+    <h2>Reset everything?</h2>
+    <p class="muted">This removes tasks, habits, goals, achievements, files, and settings from this device. You cannot undo it.</p>
+    <div class="dfoot">
+      <button class="btn" id="c-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="c-confirm" type="button">Reset all</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="settings.js"></script>
+</body>
+</html>

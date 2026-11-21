@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Center · Priority</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="help.css">
+  <script src="app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="nav-slot"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
+      <div class="ttl"><h1>Help Center</h1><p>Answers to common questions, and a quick guide to every page.</p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+    </header>
+
+    <!-- Search hero -->
+    <section class="help-hero">
+      <h2>What can we help with?</h2>
+      <label class="sr-only" for="q">Search help</label>
+      <input id="q" type="search" placeholder="Search help…  (try “calendar” or “backup”)">
+      <div class="quick-tags" id="tags"></div>
+    </section>
+
+    <div class="grid-h">
+      <!-- FAQ list -->
+      <section class="card span-2">
+        <header class="card-head"><h2>Frequently asked</h2><span class="pill" id="count">0</span></header>
+        <ul class="faq" id="faq"></ul>
+        <p class="no-results" id="no-results">No matches. Try a different word.</p>
+      </section>
+
+      <!-- Guides -->
+      <section class="card">
+        <header class="card-head"><h2>Page guides</h2></header>
+        <ul class="guides" id="guides"></ul>
+      </section>
+
+      <!-- Shortcuts -->
+      <section class="card span-2">
+        <header class="card-head"><h2>Keyboard shortcuts</h2></header>
+        <ul class="shortcuts" id="shortcuts"></ul>
+      </section>
+
+      <!-- Contact -->
+      <section class="card">
+        <header class="card-head"><h2>Still stuck?</h2></header>
+        <p class="muted">Priority is a personal project, built to help you feel calmer about your day. If something's not working, try refreshing the page first — most issues clear up on a reload.</p>
+        <p class="muted">Your data lives in your browser. If a page acts up, exporting a backup from <a href="settings.html">Settings</a> and then clearing storage can fix most stubborn issues.</p>
+        <div class="contact-row">
+          <a class="btn btn-primary" href="settings.html">Open Settings</a>
+          <a class="btn" href="profile.html">Backup data</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="help.js"></script>
+</body>
+</html>

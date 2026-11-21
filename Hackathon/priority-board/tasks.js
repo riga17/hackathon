@@ -4,7 +4,8 @@
   const LISTS = ['now', 'later', 'done'], NAMES = { now: 'Now', later: 'Later', done: 'Done' };
   const RANK = { high: 0, medium: 1, low: 2 }, NEXT = { high: 'medium', medium: 'low', low: 'high' };
   const LABEL = { high: 'High', medium: 'Medium', low: 'Low' };
-  const CATS = { study: '📚 Study', work: '💼 Work', personal: '🏡 Personal', other: '✨ Other' };
+  const CATS = { study: 'Study', work: 'Work', personal: 'Personal', other: 'Other' };
+  const CAT_ICONS = { study: 'book', work: 'note', personal: 'home', other: 'star' };
   const $ = (id) => document.getElementById(id);
   const pad = (n) => String(n).padStart(2, '0');
   const ds = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -15,15 +16,27 @@
   let tasks = [], filt = { q: '', p: 'all' }, editing = null, dragId = null, ut;
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function icn(name, size) { return window.PriorityIcon ? PriorityIcon(name, size) : ''; }
   const find = (id) => tasks.find((t) => t.id === id);
   const countIn = (l) => tasks.filter((t) => t.list === l).length;
+
+  /* ----- Column header icons ----- */
+  [['ico-now', 'fire'], ['ico-later', 'clock'], ['ico-done', 'checkCircle']].forEach(([id, n]) => {
+    const e = document.getElementById(id);
+    if (e) e.innerHTML = icn(n, 18);
+  });
 
   /* ----- Storage ----- */
   function clean(arr) {
     let n = 0;
     return arr.filter((r) => r && typeof r.id === 'string' && typeof r.title === 'string' && r.title.trim() && LISTS.includes(r.list) && r.priority in RANK)
       .map((r) => {
-        const t = Object.assign({}, r, { title: r.title.trim().slice(0, 80), due: /^\d{4}-\d{2}-\d{2}$/.test(r.due || '') ? r.due : '', note: (r.note || '').slice(0, 300), cat: CATS[r.cat] ? r.cat : '' });
+        const t = Object.assign({}, r, {
+          title: r.title.trim().slice(0, 80),
+          due: /^\d{4}-\d{2}-\d{2}$/.test(r.due || '') ? r.due : '',
+          note: (r.note || '').slice(0, 300),
+          cat: CATS[r.cat] ? r.cat : ''
+        });
         if (t.list === 'now' && ++n > LIM) t.list = 'later';
         return t;
       });
@@ -72,11 +85,17 @@
     const pb = el('button', 'bd pr', LABEL[t.priority]); pb.type = 'button'; pb.dataset.a = 'prio'; pb.title = 'Click to change priority';
     meta.append(pb);
     const d = due(t); if (d) meta.append(el('span', 'bd ' + d[1], d[0]));
-    if (t.cat) meta.append(el('span', 'bd', CATS[t.cat]));
+    if (t.cat) {
+      const cb = el('span', 'bd');
+      cb.innerHTML = icn(CAT_ICONS[t.cat] || 'star', 12) + ' ' + CATS[t.cat];
+      meta.append(cb);
+    }
     body.append(meta);
     const acts = el('div', 'acts');
-    [['edit', '✎', 'Edit task'], ['del', '✕', 'Delete task']].forEach(([a, s, l]) => {
-      const b = el('button', null, s); b.type = 'button'; b.dataset.a = a; b.setAttribute('aria-label', l); b.title = l; acts.append(b);
+    [['edit', 'edit', 'Edit task'], ['del', 'x', 'Delete task']].forEach(([a, n, l]) => {
+      const b = el('button'); b.type = 'button'; b.dataset.a = a; b.setAttribute('aria-label', l); b.title = l;
+      b.innerHTML = icn(n, 14);
+      acts.append(b);
     });
     li.append(chk, body, acts);
     return li;
@@ -102,6 +121,8 @@
     const t = find(id); if (!t) return;
     if (list === 'now' && t.list !== 'now' && countIn('now') >= LIM) { P.toast('Now is full (' + LIM + '). Finish or move one first.'); render(); return; }
     tasks = tasks.filter((x) => x.id !== id); t.list = list;
+    if (list === 'done') t.completedAt = new Date().toISOString();
+    else delete t.completedAt;
     const i = beforeId ? tasks.findIndex((x) => x.id === beforeId) : -1;
     i >= 0 ? tasks.splice(i, 0, t) : tasks.push(t);
     save(); render();
@@ -126,9 +147,12 @@
   function openDlg(t, list) {
     editing = t ? t.id : null;
     $('d-title').textContent = t ? 'Edit task' : 'New task';
-    $('f-title').value = t ? t.title : ''; $('f-prio').value = t ? t.priority : 'medium';
-    $('f-due').value = t ? t.due : ''; $('f-list').value = t ? t.list : (list || 'later');
-    $('f-cat').value = t ? t.cat || '' : ''; $('f-note').value = t ? t.note || '' : '';
+    $('f-title').value = t ? t.title : '';
+    $('f-prio').value = t ? t.priority : (P.get().defaultPrio || 'medium');
+    $('f-due').value = t ? t.due : '';
+    $('f-list').value = t ? t.list : (list || P.get().defaultList || 'later');
+    $('f-cat').value = t ? t.cat || '' : '';
+    $('f-note').value = t ? t.note || '' : '';
     $('f-del').style.display = t ? '' : 'none';
     dlg.showModal(); $('f-title').focus();
   }
@@ -138,8 +162,17 @@
     const data = { title: title.slice(0, 80), priority: $('f-prio').value, due: $('f-due').value, cat: $('f-cat').value, note: $('f-note').value.trim() };
     const t = editing ? find(editing) : null;
     if (list === 'now' && (!t || t.list !== 'now') && countIn('now') >= LIM) { list = 'later'; P.toast('Now is full, so it went to Later.'); }
-    if (t) { Object.assign(t, data); if (t.list !== list) { tasks = tasks.filter((x) => x !== t); t.list = list; tasks.push(t); } }
-    else tasks.unshift(Object.assign({ id: uid(), list, createdAt: Date.now() }, data));
+    if (t) {
+      Object.assign(t, data);
+      if (t.list !== list) {
+        tasks = tasks.filter((x) => x !== t); t.list = list; tasks.push(t);
+        if (list === 'done') t.completedAt = new Date().toISOString();
+        else delete t.completedAt;
+      }
+    } else {
+      tasks.unshift(Object.assign({ id: uid(), list, createdAt: Date.now() }, data));
+      if (list === 'done') tasks[0].completedAt = new Date().toISOString();
+    }
     save(); render();
   });
   $('f-cancel').onclick = () => dlg.close();

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reminders · Priority</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="reminders.css">
+  <script src="app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="nav-slot"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
+      <div class="ttl"><h1>Reminders</h1><p id="sub"></p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+      <button class="btn btn-primary" id="new" type="button">+ New reminder</button>
+    </header>
+
+    <section class="stats" aria-label="Summary">
+      <article class="stat"><i class="ic">🔔</i><div><b id="st-total">0</b><span>Upcoming</span></div></article>
+      <article class="stat"><i class="ic">⏰</i><div><b id="st-today">0</b><span>Today</span></div></article>
+      <article class="stat"><i class="ic">⚠️</i><div><b id="st-over">0</b><span>Overdue</span></div></article>
+      <article class="stat"><i class="ic">✅</i><div><b id="st-done">0</b><span>Done</span></div></article>
+    </section>
+
+    <div class="grid-r">
+      <!-- Reminder timeline -->
+      <section class="card span-2">
+        <header class="card-head">
+          <h2>Timeline</h2>
+          <div class="seg-row">
+            <button class="seg on" data-f="all" type="button">All</button>
+            <button class="seg" data-f="open" type="button">Open</button>
+            <button class="seg" data-f="done" type="button">Done</button>
+          </div>
+        </header>
+        <div class="timeline" id="timeline"></div>
+      </section>
+
+      <!-- Custom reminders -->
+      <section class="card">
+        <header class="card-head"><h2>Custom reminders</h2></header>
+        <ul class="list custom" id="custom-list"></ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog -->
+<dialog id="dlg">
+  <form id="form" method="dialog">
+    <h2 id="d-title">New reminder</h2>
+    <label>What is it for?<input id="f-text" maxlength="100" required placeholder="e.g. Call the dentist"></label>
+    <div class="two">
+      <label>Date<input id="f-date" type="date" required></label>
+      <label>Time<input id="f-time" type="time" value="09:00" required></label>
+    </div>
+    <label class="tog"><input type="checkbox" id="f-alert" checked> Notify me when the page is open</label>
+    <div class="dfoot">
+      <button class="btn del" id="f-del" type="button">Delete</button>
+      <button class="btn" id="f-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="reminders.js"></script>
+</body>
+</html>

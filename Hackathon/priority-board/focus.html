@@ -16,64 +16,124 @@
 
   <div class="main">
     <header class="top">
-      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
-      <div class="ttl"><h1>Focus Mode</h1><p>One task. One timer. No distractions.</p></div>
-      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu" data-icon="grid"></button>
+      <div class="ttl"><h1>Focus Mode</h1><p id="sub">One task. One timer. Nothing else.</p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+      <button class="ib" id="zen-btn" type="button" aria-label="Enter Zen Mode" title="Zen mode"></button>
     </header>
 
-    <section class="strip" aria-label="Today's focus">
-      <div><div class="big" id="s-n">0</div><div class="lbl">sessions today</div></div>
-      <div><div class="big" id="s-m">0 min</div><div class="lbl">focused today</div></div>
-      <div><div class="big" id="s-all">0</div><div class="lbl">sessions all time</div></div>
-    </section>
-
-    <section class="stage" id="stage">
-      <div class="stage-bar">
-        <div class="seg-row" id="modes" role="group" aria-label="Timer style"></div>
-        <div class="stage-tools">
-          <button class="btn" id="fs" type="button">⛶ Full screen</button>
-          <button class="btn" id="zen" type="button">🧘 Zen mode</button>
-        </div>
+    <!-- Hero focus card -->
+    <section class="focus-hero">
+      <div class="focus-top">
+        <span class="focus-label" id="focus-label">Ready to focus</span>
+        <span class="focus-streak" id="focus-streak"></span>
       </div>
 
-      <div class="custom" id="custom" hidden>
-        <label>Focus <input id="c-focus" type="number" min="1" max="180" value="30"> min</label>
-        <label>Break <input id="c-break" type="number" min="1" max="60" value="5"> min</label>
+      <div class="focus-task" id="focus-task">
+        <p class="ft-eyebrow">Working on</p>
+        <h2 class="ft-title" id="ft-title">No task selected</h2>
+        <p class="ft-sub" id="ft-sub">Pick something from your Now list to begin.</p>
+        <button class="btn" id="pick-btn" type="button">Choose a task</button>
       </div>
 
-      <p class="phase" id="phase">Focus</p>
-      <h2 class="now-task" id="now-task">Free focus</h2>
+      <div class="focus-timer" id="focus-timer">25:00</div>
 
-      <div class="ring-wrap">
-        <svg viewBox="0 0 260 260" class="ring-svg" aria-hidden="true">
-          <circle class="track" cx="130" cy="130" r="120"></circle>
-          <circle class="prog" id="prog" cx="130" cy="130" r="120"></circle>
-        </svg>
-        <div class="clock" id="clock" role="timer">25:00</div>
+      <div class="focus-actions">
+        <button class="btn btn-primary" id="start-btn" type="button">Start focus</button>
+        <button class="btn" id="pause-btn" type="button" hidden>Pause</button>
+        <button class="btn" id="reset-btn" type="button">Reset</button>
       </div>
 
-      <div class="ctrl">
-        <button class="btn btn-primary big-btn" id="go" type="button">Start</button>
-        <button class="btn" id="skip" type="button">Skip</button>
-        <button class="btn" id="reset" type="button">Reset</button>
-      </div>
-
-      <div class="pick">
-        <label for="task-sel">Working on</label>
-        <select id="task-sel"></select>
-        <button class="btn" id="task-done" type="button">Mark task done</button>
-      </div>
-
-      <label class="auto"><input type="checkbox" id="auto"> Start the next round automatically</label>
-
-      <div class="music" aria-label="Focus music">
-        <b>🎵 Music</b>
-        <div class="m-tracks" id="m-tracks"></div>
-        <input class="range" id="m-vol" type="range" min="0" max="1" step="0.05" aria-label="Volume">
+      <div class="focus-presets" role="group" aria-label="Timer length">
+        <button class="seg on" data-min="25" data-type="focus" type="button">25 min</button>
+        <button class="seg" data-min="50" data-type="focus" type="button">50 min</button>
+        <button class="seg" data-min="15" data-type="focus" type="button">15 min</button>
+        <button class="seg" data-min="5" data-type="break" type="button">Short break</button>
+        <button class="seg" data-min="15" data-type="break" type="button">Long break</button>
+        <button class="seg" data-min="custom" data-type="custom" type="button">Custom</button>
       </div>
     </section>
+
+    <div class="focus-grid">
+      <!-- Session info -->
+      <section class="card">
+        <header class="card-head"><h2>This session</h2></header>
+        <ul class="focus-stats">
+          <li><span>Type</span><b id="stat-type">Focus</b></li>
+          <li><span>Length</span><b id="stat-length">25 min</b></li>
+          <li><span>Task</span><b id="stat-task">None</b></li>
+          <li><span>Sessions today</span><b id="stat-count">0</b></li>
+          <li><span>Focus time today</span><b id="stat-total">0 min</b></li>
+        </ul>
+      </section>
+
+      <!-- Session history -->
+      <section class="card">
+        <header class="card-head"><h2>Today's sessions</h2><button class="mini-b" id="clear-history" type="button">Clear</button></header>
+        <ul class="focus-history" id="focus-history"></ul>
+      </section>
+
+      <!-- Tips -->
+      <section class="card span-2">
+        <header class="card-head"><h2>Focus tips</h2></header>
+        <ul class="focus-tips">
+          <li>Pick one thing from Now. Not three.</li>
+          <li>Silence notifications. Everything can wait 25 minutes.</li>
+          <li>Take the break when the timer ends. It makes the next session easier.</li>
+          <li>After four focus sessions, take a longer break — 15 minutes or a walk.</li>
+        </ul>
+      </section>
+    </div>
   </div>
 </div>
+
+<!-- Task picker dialog -->
+<dialog id="pick-dialog">
+  <form method="dialog">
+    <h2>Pick a task to focus on</h2>
+    <p class="muted">These are the tasks currently in your Now list.</p>
+    <ul class="pick-list" id="pick-list"></ul>
+    <div class="dfoot">
+      <button class="btn" id="pick-cancel" type="button">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Custom length dialog -->
+<dialog id="custom-dialog">
+  <form method="dialog" id="custom-form">
+    <h2>Custom timer</h2>
+    <p class="muted">Set any length from 1 to 120 minutes.</p>
+    <div class="custom-row">
+      <input type="range" id="custom-range" min="1" max="120" step="1" value="25">
+      <output id="custom-out">25 min</output>
+    </div>
+    <div class="custom-quick">
+      <button type="button" data-m="45">45</button>
+      <button type="button" data-m="60">60</button>
+      <button type="button" data-m="90">90</button>
+    </div>
+    <div class="dfoot">
+      <button class="btn" id="custom-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="custom-start" type="button">Start</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Zen mode overlay -->
+<div class="zen" id="zen" hidden>
+  <button class="zen-exit" id="zen-exit" type="button" aria-label="Exit Zen Mode" data-icon="x"></button>
+  <div class="zen-inner">
+    <p class="zen-label" id="zen-label">Focusing on</p>
+    <h1 class="zen-task" id="zen-task">Take a breath and focus.</h1>
+    <div class="zen-timer" id="zen-timer">25:00</div>
+    <div class="zen-actions">
+      <button class="zen-btn" id="zen-toggle" type="button">Start</button>
+      <button class="zen-btn zen-btn-ghost" id="zen-reset" type="button">Reset</button>
+    </div>
+  </div>
+</div>
+
 <script src="focus.js"></script>
 </body>
 </html>

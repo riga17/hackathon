@@ -7,12 +7,15 @@
   const today = ds(new Date());
   const fmt = (s) => new Date(s + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const icn = (name, size) => (window.PriorityIcon ? PriorityIcon(name, size) : '');
 
   const PRIO = { high: 'hsl(0 85% 62%)', medium: 'hsl(38 95% 55%)', low: 'hsl(150 60% 45%)' };
   const PRIO_LABEL = { high: 'High', medium: 'Medium', low: 'Low' };
   const LIST_COLORS = { now: 'hsl(335 85% 56%)', later: 'hsl(215 80% 58%)', done: 'hsl(150 60% 45%)' };
   const LIST_LABEL = { now: 'Now', later: 'Later', done: 'Done' };
-  const CATS = { study: '📚 Study', work: '💼 Work', personal: '🏡 Personal', other: '✨ Other' };
+  const CATS = { study: 'Study', work: 'Work', personal: 'Personal', other: 'Other' };
+  const CAT_ICONS = { study: 'book', work: 'note', personal: 'home', other: 'star' };
+  const CAT_COLORS = { study: 'hsl(265 70% 60%)', work: 'hsl(215 80% 58%)', personal: 'hsl(335 85% 56%)', other: 'hsl(38 95% 55%)', none: 'hsl(0 0% 60%)' };
 
   let tasks = [];
   try { const r = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(r)) tasks = r; } catch (e) {}
@@ -36,6 +39,7 @@
     leg.textContent = '';
     if (!sum) {
       donut.style.setProperty('--seg', 'conic-gradient(var(--border) 0 100%)');
+      donut.innerHTML = '';
       const inn = el('div', 'donut-in');
       inn.append(el('b', null, '0'), el('span', null, 'tasks'));
       donut.append(inn);
@@ -62,7 +66,7 @@
     });
   }
 
-  /* ----- By priority (open + done) ----- */
+  /* ----- By priority ----- */
   const prioCounts = { high: 0, medium: 0, low: 0 };
   tasks.forEach((t) => { if (prioCounts[t.priority] != null) prioCounts[t.priority]++; });
   drawDonut('donut-prio', 'leg-prio', prioCounts, PRIO, PRIO_LABEL, 'No tasks yet.');
@@ -73,11 +77,10 @@
   drawDonut('donut-list', 'leg-list', listCounts, LIST_COLORS, LIST_LABEL, 'Nothing to show.');
 
   /* ----- 14-day completion trend ----- */
-  // Uses createdAt + done state; if a task has no completedAt, treat it as completed today when done
   function completedDate(t) {
     if (t.list !== 'done') return null;
     if (t.completedAt && /^\d{4}-\d{2}-\d{2}/.test(t.completedAt)) return t.completedAt.slice(0, 10);
-    return today; // fallback: count existing done tasks as today
+    return today;
   }
   const trend = $('trend');
   const days = [];
@@ -100,16 +103,17 @@
   tasks.forEach((t) => { catCounts[t.cat && CATS[t.cat] ? t.cat : 'none']++; });
   const catList = $('cat-list'); catList.textContent = '';
   const catTotal = Math.max(1, tasks.length);
-  const catColors = { study: 'hsl(265 70% 60%)', work: 'hsl(215 80% 58%)', personal: 'hsl(335 85% 56%)', other: 'hsl(38 95% 55%)', none: 'hsl(0 0% 60%)' };
-  const catLabels = Object.assign({ none: 'Uncategorized' }, CATS);
   const catEntries = Object.entries(catCounts).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
   if (!catEntries.length) catList.append(el('li', 'empty-line', 'No tasks to categorize.'));
   catEntries.forEach(([k, n]) => {
     const li = el('li');
     const lb = el('div', 'lb');
-    const i = el('i'); i.style.setProperty('--c', catColors[k]);
-    lb.append(i, el('span', null, catLabels[k]));
-    const bw = el('div', 'bw'); const bi = el('i'); bi.style.width = (n / catTotal) * 100 + '%'; bi.style.setProperty('--c', catColors[k]); bw.append(bi);
+    const i = el('i'); i.style.setProperty('--c', CAT_COLORS[k]);
+    lb.append(i);
+    const lbl = el('span');
+    lbl.innerHTML = (k === 'none' ? '' : icn(CAT_ICONS[k] || 'star', 13) + ' ') + (k === 'none' ? 'Uncategorized' : CATS[k]);
+    lb.append(lbl);
+    const bw = el('div', 'bw'); const bi = el('i'); bi.style.width = (n / catTotal) * 100 + '%'; bi.style.setProperty('--c', CAT_COLORS[k]); bw.append(bi);
     li.append(lb, el('span', 'num', String(n)), bw);
     catList.append(li);
   });
@@ -127,7 +131,12 @@
     const li = el('li');
     const lb = el('div', 'lb');
     const i = el('i'); i.style.setProperty('--c', k === today ? 'hsl(38 95% 55%)' : 'var(--accent)');
-    lb.append(i, el('span', null, k === today ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })));
+    lb.append(i);
+    const lbl = el('span');
+    lbl.innerHTML = k === today
+      ? icn('clock', 13) + ' Today'
+      : icn('calendar', 13) + ' ' + d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    lb.append(lbl);
     const bw = el('div', 'bw'); const bi = el('i'); bi.style.width = (n / maxDay) * 100 + '%'; bi.style.setProperty('--c', k === today ? 'hsl(38 95% 55%)' : 'var(--accent)'); bw.append(bi);
     li.append(lb, el('span', 'num', String(n)), bw);
     dayList.append(li);

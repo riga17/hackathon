@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Achievements · Priority</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="achievements.css">
+  <script src="app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="nav-slot"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
+      <div class="ttl"><h1>Achievements</h1><p id="sub"></p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+    </header>
+
+    <!-- Level card -->
+    <section class="level-card">
+      <div class="lvl-badge" id="lvl-badge">1</div>
+      <div class="lvl-info">
+        <p class="lvl-eyebrow">Level</p>
+        <h2 id="lvl-name">Beginner</h2>
+        <p id="lvl-desc">Complete your first tasks to level up.</p>
+        <div class="xp-bar"><i id="xp-fill"></i></div>
+        <p class="xp-txt" id="xp-txt">0 / 100 XP</p>
+      </div>
+      <div class="lvl-stats">
+        <div><b id="cnt-unlocked">0</b><span>unlocked</span></div>
+        <div><b id="cnt-total">0</b><span>total badges</span></div>
+      </div>
+    </section>
+
+    <!-- Filter -->
+    <div class="tools">
+      <div class="chips" role="group" aria-label="Filter achievements">
+        <button class="chip on" data-f="all" type="button">All</button>
+        <button class="chip" data-f="unlocked" type="button">Unlocked</button>
+        <button class="chip" data-f="locked" type="button">Locked</button>
+        <button class="chip" data-f="tasks" type="button">✅ Tasks</button>
+        <button class="chip" data-f="streak" type="button">🔥 Streak</button>
+        <button class="chip" data-f="focus" type="button">🎯 Focus</button>
+        <button class="chip" data-f="habits" type="button">🌱 Habits</button>
+        <button class="chip" data-f="special" type="button">✨ Special</button>
+      </div>
+    </div>
+
+    <div class="grid-a" id="grid"></div>
+  </div>
+</div>
+
+<!-- Badge popup -->
+<dialog id="bd">
+  <div class="bd-card">
+    <div class="bd-big" id="bd-big">🏆</div>
+    <h2 id="bd-name"></h2>
+    <p id="bd-desc" class="bd-desc"></p>
+    <div class="bd-prog">
+      <div class="xp-bar"><i id="bd-fill"></i></div>
+      <p id="bd-txt" class="xp-txt"></p>
+    </div>
+    <div class="bd-foot">
+      <button class="btn" id="bd-close" type="button">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="achievements.js"></script>
+</body>
+</html>

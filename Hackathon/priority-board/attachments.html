@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Attachments · Priority</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="attachments.css">
+  <script src="app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="nav-slot"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
+      <div class="ttl"><h1>My Attachments</h1><p id="sub"></p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+      <button class="btn btn-primary" id="upload-btn" type="button">+ Upload files</button>
+      <input type="file" id="file-input" multiple hidden>
+    </header>
+
+    <!-- Drop zone -->
+    <section class="drop" id="drop">
+      <span class="drop-ico">📎</span>
+      <p><b>Drag files here</b> or click upload</p>
+      <p class="drop-sub">Images, PDFs, text, audio, video — stored on your device.</p>
+    </section>
+
+    <div class="tools">
+      <label class="sr-only" for="q">Search attachments</label>
+      <input id="q" type="search" placeholder="Search by name…">
+      <div class="chips" role="group" aria-label="Filter by type">
+        <button class="chip on" data-t="all" type="button">All</button>
+        <button class="chip" data-t="image" type="button">🖼 Images</button>
+        <button class="chip" data-t="pdf" type="button">📄 PDFs</button>
+        <button class="chip" data-t="text" type="button">📝 Notes</button>
+        <button class="chip" data-t="audio" type="button">🎵 Audio</button>
+        <button class="chip" data-t="video" type="button">🎬 Video</button>
+        <button class="chip" data-t="other" type="button">📦 Other</button>
+      </div>
+      <span class="storage-pill" id="storage"></span>
+    </div>
+
+    <div class="grid-a" id="grid"></div>
+
+    <!-- Preview modal -->
+    <dialog id="preview">
+      <div class="pv-head">
+        <h2 id="pv-name"></h2>
+        <button class="mini-b" id="pv-close" type="button" aria-label="Close preview">✕</button>
+      </div>
+      <div class="pv-body" id="pv-body"></div>
+      <div class="pv-foot">
+        <span id="pv-meta"></span>
+        <a class="btn" id="pv-dl" download>Download</a>
+        <button class="btn del" id="pv-del" type="button">Delete</button>
+      </div>
+    </dialog>
+  </div>
+</div>
+<script src="attachments.js"></script>
+</body>
+</html>

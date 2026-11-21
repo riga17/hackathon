@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Profile · Priority</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="profile.css">
+  <script src="app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="nav-slot"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
+      <div class="ttl"><h1>My Profile</h1><p id="sub">Your personal corner of Priority.</p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+      <a class="btn btn-primary" href="settings.html">Settings</a>
+    </header>
+
+    <!-- Profile hero -->
+    <section class="prof-hero">
+      <div class="prof-avatar" id="avatar-wrap">
+        <span id="avatar-emoji">🙂</span>
+        <button class="edit-av" id="edit-av" type="button" aria-label="Change avatar">✎</button>
+      </div>
+      <div class="prof-info">
+        <h2 id="p-name">Your name</h2>
+        <p id="p-tag" class="tag-line">Set a display name to personalize your app.</p>
+        <div class="quick-edit">
+          <button class="btn" id="edit-prof" type="button">Edit profile</button>
+          <button class="btn" id="export" type="button">Export data</button>
+        </div>
+      </div>
+      <div class="prof-level">
+        <div class="lvl-ring" id="lvl-ring"><b id="lvl-num">1</b><span>level</span></div>
+        <div>
+          <p class="xp-lbl">XP earned</p>
+          <p id="xp-total" class="xp-num">0</p>
+          <p id="xp-hint" class="xp-hint">Unlock achievements to grow.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats" aria-label="Your stats">
+      <article class="stat"><i class="ic">📋</i><div><b id="s-total">0</b><span>Total tasks</span></div></article>
+      <article class="stat"><i class="ic">✅</i><div><b id="s-done">0</b><span>Tasks done</span></div></article>
+      <article class="stat"><i class="ic">🔥</i><div><b id="s-streak">0</b><span>Best streak</span></div></article>
+      <article class="stat"><i class="ic">🏆</i><div><b id="s-badges">0</b><span>Badges</span></div></article>
+    </section>
+
+    <div class="grid-p">
+      <!-- About me -->
+      <section class="card span-2">
+        <header class="card-head"><h2>About me</h2></header>
+        <p id="about-text" class="about-text">No bio yet. Say a little about yourself.</p>
+        <div class="chips-row">
+          <span class="chip-lbl">Member since</span>
+          <span class="chip-val" id="joined">—</span>
+        </div>
+        <div class="chips-row">
+          <span class="chip-lbl">Timezone</span>
+          <span class="chip-val" id="tz">—</span>
+        </div>
+      </section>
+
+      <!-- Activity snapshot -->
+      <section class="card">
+        <header class="card-head"><h2>This week</h2></header>
+        <ul class="activity-list" id="activity"></ul>
+      </section>
+
+      <!-- Data & privacy -->
+      <section class="card span-2">
+        <header class="card-head"><h2>Data &amp; privacy</h2></header>
+        <p class="muted">Everything is saved on this device only. Nothing leaves your browser.</p>
+        <div class="data-grid">
+          <div><b id="data-tasks">0</b><span>tasks stored</span></div>
+          <div><b id="data-habits">0</b><span>habits tracked</span></div>
+          <div><b id="data-goals">0</b><span>goals</span></div>
+          <div><b id="data-files">0</b><span>files attached</span></div>
+        </div>
+        <div class="data-btns">
+          <button class="btn" id="backup" type="button">Download backup</button>
+          <button class="btn btn-danger" id="reset-all" type="button">Reset all data</button>
+        </div>
+      </section>
+
+      <!-- Quick shortcuts -->
+      <section class="card">
+        <header class="card-head"><h2>Shortcuts</h2></header>
+        <ul class="shortcuts">
+          <li><a href="tasks.html"><span>✅</span>My Tasks</a></li>
+          <li><a href="calendar.html"><span>📅</span>Calendar</a></li>
+          <li><a href="habits.html"><span>🌱</span>Habits &amp; Goals</a></li>
+          <li><a href="achievements.html"><span>🏆</span>Achievements</a></li>
+          <li><a href="settings.html"><span>⚙️</span>Settings</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Edit dialog -->
+<dialog id="dlg">
+  <form id="form" method="dialog">
+    <h2>Edit profile</h2>
+    <label>Display name<input id="f-name" maxlength="30" required placeholder="Your name"></label>
+    <label>Avatar
+      <div class="avatar-grid" id="avatar-grid"></div>
+    </label>
+    <label>Bio (optional)<textarea id="f-bio" maxlength="160" rows="3" placeholder="A sentence about you…"></textarea></label>
+    <div class="dfoot">
+      <button class="btn" id="f-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Reset confirm -->
+<dialog id="confirm">
+  <form method="dialog">
+    <h2>Reset everything?</h2>
+    <p class="muted">This clears tasks, habits, goals, achievements, files, and settings from this device. You cannot undo it.</p>
+    <div class="dfoot">
+      <button class="btn" id="c-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="c-confirm" type="button">Reset all</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="profile.js"></script>
+</body>
+</html>
