@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="attachments.css">
   <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -16,49 +17,71 @@
 
   <div class="main">
     <header class="top">
-      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
-      <div class="ttl"><h1>My Attachments</h1><p id="sub"></p></div>
-      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
-      <button class="btn btn-primary" id="upload-btn" type="button">+ Upload files</button>
-      <input type="file" id="file-input" multiple hidden>
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu" data-icon="grid"></button>
+      <div class="ttl"><h1>Scanner</h1><p id="sub">Scan notes, receipts, or anything with text.</p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
     </header>
 
-    <!-- Drop zone -->
-    <section class="drop" id="drop">
-      <span class="drop-ico">📎</span>
-      <p><b>Drag files here</b> or click upload</p>
-      <p class="drop-sub">Images, PDFs, text, audio, video — stored on your device.</p>
+    <!-- Scanner hero -->
+    <section class="scan-hero">
+      <div class="scan-zone" id="scan-zone">
+        <div class="scan-frame">
+          <div class="scan-corner tl"></div>
+          <div class="scan-corner tr"></div>
+          <div class="scan-corner bl"></div>
+          <div class="scan-corner br"></div>
+          <div class="scan-line"></div>
+          <div class="scan-icon" id="scan-icon"></div>
+          <p class="scan-title" id="scan-title">Drop a photo here</p>
+          <p class="scan-sub" id="scan-sub">Or click to choose a photo. We'll read the text for you.</p>
+        </div>
+      </div>
+
+      <div class="scan-actions">
+        <button class="btn btn-primary" id="pick-photo" type="button">Choose photo</button>
+        <button class="btn" id="use-camera" type="button">Use camera</button>
+      </div>
+
+      <input type="file" id="photo-input" accept="image/*" hidden>
+      <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
     </section>
 
-    <div class="tools">
-      <label class="sr-only" for="q">Search attachments</label>
-      <input id="q" type="search" placeholder="Search by name…">
-      <div class="chips" role="group" aria-label="Filter by type">
-        <button class="chip on" data-t="all" type="button">All</button>
-        <button class="chip" data-t="image" type="button">🖼 Images</button>
-        <button class="chip" data-t="pdf" type="button">📄 PDFs</button>
-        <button class="chip" data-t="text" type="button">📝 Notes</button>
-        <button class="chip" data-t="audio" type="button">🎵 Audio</button>
-        <button class="chip" data-t="video" type="button">🎬 Video</button>
-        <button class="chip" data-t="other" type="button">📦 Other</button>
+    <!-- Scanning progress -->
+    <div class="scan-progress" id="scan-progress" hidden>
+      <div class="sp-head">
+        <span class="sp-label">Scanning…</span>
+        <span class="sp-pct" id="sp-pct">0%</span>
       </div>
+      <div class="sp-bar"><i id="sp-fill"></i></div>
+      <p class="sp-hint" id="sp-hint">Reading the text. This takes a few seconds.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-row">
+      <button class="tab on" data-tab="scans" type="button">Scanned notes</button>
+      <button class="tab" data-tab="files" type="button">Other files</button>
+      <button class="tab" data-tab="all" type="button">All</button>
+    </div>
+
+    <!-- Search -->
+    <div class="tools">
+      <label class="sr-only" for="q">Search</label>
+      <input id="q" type="search" placeholder="Search by text or name…">
+      <button class="btn btn-line" id="upload-btn" type="button">+ Upload file</button>
+      <input type="file" id="file-input" multiple hidden>
       <span class="storage-pill" id="storage"></span>
     </div>
 
+    <!-- Grid -->
     <div class="grid-a" id="grid"></div>
 
-    <!-- Preview modal -->
+    <!-- Preview dialog -->
     <dialog id="preview">
       <div class="pv-head">
         <h2 id="pv-name"></h2>
         <button class="mini-b" id="pv-close" type="button" aria-label="Close preview">✕</button>
       </div>
       <div class="pv-body" id="pv-body"></div>
-      <div class="pv-foot">
-        <span id="pv-meta"></span>
-        <a class="btn" id="pv-dl" download>Download</a>
-        <button class="btn del" id="pv-del" type="button">Delete</button>
-      </div>
     </dialog>
   </div>
 </div>

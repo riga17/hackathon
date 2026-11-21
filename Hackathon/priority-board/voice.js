@@ -1,19 +1,21 @@
 (function () {
   'use strict';
-  const VK = 'priority.voice', P = window.Priority;
+  const VK = 'priority.voice', CK = 'priorityConversations.v1', AK = 'priorityActiveChat.v1', P = window.Priority;
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const icn = (name, size) => (window.PriorityIcon ? PriorityIcon(name, size) : '');
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
   // ============================================================
-  // YOUR GROQ API KEY
+  // GROQ API — paste your key here
   // ============================================================
-  const GROQ_KEY = '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'; // <-- paste your Groq key
+  const GROQ_KEY = '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';
   const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
   const GROQ_MODEL = 'openai/gpt-oss-120b';
   // ============================================================
 
   const menuBtn = $('menu-btn');
-  if (menuBtn) menuBtn.innerHTML = P.icon('grid', 20);
+  if (menuBtn) menuBtn.innerHTML = icn('grid', 20);
 
   /* =========================================================
      Voice
@@ -31,11 +33,8 @@
     const sel = $('voice-select');
     sel.innerHTML = '';
     if (!voices.length) {
-      const o = el('option', null, 'No voices');
-      o.value = '';
-      sel.append(o);
-      sel.disabled = true;
-      return;
+      const o = el('option', null, 'No voices'); o.value = '';
+      sel.append(o); sel.disabled = true; return;
     }
     sel.disabled = false;
     voices.forEach((v) => {
@@ -46,34 +45,23 @@
     });
     if (!VS.voiceURI) {
       const pref = voices.find((v) => /en/i.test(v.lang) && /female|samantha|zira|karen|google us english/i.test(v.name))
-        || voices.find((v) => /en/i.test(v.lang))
-        || voices[0];
-      VS.voiceURI = pref.voiceURI;
-      saveVS();
-      sel.value = pref.voiceURI;
+        || voices.find((v) => /en/i.test(v.lang)) || voices[0];
+      VS.voiceURI = pref.voiceURI; saveVS(); sel.value = pref.voiceURI;
     }
     chosenVoice = voices.find((v) => v.voiceURI === VS.voiceURI) || voices[0];
   }
-
   if (synth) {
     loadVoices();
     if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = loadVoices;
     setTimeout(loadVoices, 500);
   }
-
   $('voice-select').addEventListener('change', (e) => {
-    VS.voiceURI = e.target.value;
-    saveVS();
+    VS.voiceURI = e.target.value; saveVS();
     chosenVoice = voices.find((v) => v.voiceURI === VS.voiceURI) || voices[0];
     if (chosenVoice) say('Hi, this is my voice.');
   });
-
   $('speak-back').checked = VS.speak;
-  $('speak-back').addEventListener('change', (e) => {
-    VS.speak = e.target.checked;
-    saveVS();
-    if (!VS.speak && synth) synth.cancel();
-  });
+  $('speak-back').addEventListener('change', (e) => { VS.speak = e.target.checked; saveVS(); });
 
   function say(text) {
     if (!VS.speak || !synth) return;
@@ -81,24 +69,124 @@
     const u = new SpeechSynthesisUtterance(text);
     if (chosenVoice) u.voice = chosenVoice;
     u.rate = 1.02;
-    u.pitch = 1;
     synth.speak(u);
   }
 
   /* =========================================================
-     Chat UI
+     Conversations
      ========================================================= */
-  function addMsg(who, text) {
-    const ul = $('chat');
-    const empty = ul.querySelector('.ai-empty');
-    if (empty) empty.remove();
-    const li = el('li', 'ai-msg ' + (who === 'user' ? 'user' : 'ai'));
-    const av = el('div', 'ai-av', who === 'user' ? 'You' : 'AI');
-    const bub = el('div', 'ai-bub', text);
-    li.append(av, bub);
-    ul.append(li);
+  let conversations = [];
+  try { const r = JSON.parse(localStorage.getItem(CK)); if (Array.isArray(r)) conversations = r; } catch (e) {}
+  const saveConvs = () => { try { localStorage.setItem(CK, JSON.stringify(conversations)); } catch (e) {} };
+
+  let activeId = null;
+  try { activeId = localStorage.getItem(AK); } catch (e) {}
+  const saveActive = (id) => {
+    activeId = id;
+    try { localStorage.setItem(AK, id || ''); } catch (e) {}
+  };
+
+  function currentConv() { return conversations.find((c) => c.id === activeId); }
+
+  function newConversation() {
+    const c = {
+      id: uid(),
+      title: 'New chat',
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    conversations.unshift(c);
+    saveConvs();
+    saveActive(c.id);
+    renderConvList();
+    renderThread();
+    $('chat-input').focus();
+  }
+
+  function openConversation(id) {
+    const c = conversations.find((x) => x.id === id);
+    if (!c) return;
+    saveActive(id);
+    renderConvList();
+    renderThread();
+  }
+
+  function deleteConversation(id) {
+    if (!confirm('Delete this conversation?')) return;
+    conversations = conversations.filter((c) => c.id !== id);
+    saveConvs();
+    if (activeId === id) {
+      const next = conversations[0];
+      if (next) saveActive(next.id);
+      else { newConversation(); return; }
+    }
+    renderConvList();
+    renderThread();
+  }
+
+  function titleFrom(text) {
+    const t = text.trim().replace(/\s+/g, ' ').slice(0, 40);
+    return t || 'New chat';
+  }
+
+  function pushMessage(role, content) {
+    let c = currentConv();
+    if (!c) { newConversation(); c = currentConv(); }
+    c.messages.push({ role, content });
+    if (role === 'user' && (c.title === 'New chat' || !c.title)) {
+      c.title = titleFrom(content);
+    }
+    c.updatedAt = Date.now();
+    conversations = [c, ...conversations.filter((x) => x.id !== c.id)];
+    saveConvs();
+    renderConvList();
+    renderThread();
+  }
+
+  /* =========================================================
+     Render sidebar
+     ========================================================= */
+  function renderConvList() {
+    const ul = $('conv-list'); ul.textContent = '';
+    if (!conversations.length) {
+      ul.append(el('li', 'conv-empty', 'No chats yet. Start one.'));
+      return;
+    }
+    conversations.forEach((c) => {
+      const li = el('li', 'conv-item' + (c.id === activeId ? ' on' : ''));
+      const title = el('span', 'conv-title', c.title || 'New chat');
+      const del = el('button', 'conv-del');
+      del.type = 'button';
+      del.innerHTML = icn('x', 12);
+      del.setAttribute('aria-label', 'Delete conversation');
+      del.onclick = (e) => { e.stopPropagation(); deleteConversation(c.id); };
+      li.append(title, del);
+      li.onclick = () => openConversation(c.id);
+      ul.append(li);
+    });
+  }
+
+  /* =========================================================
+     Render thread
+     ========================================================= */
+  function renderThread() {
+    const ul = $('chat'); ul.textContent = '';
+    const c = currentConv();
+    if (!c || !c.messages.length) {
+      const li = el('li', 'ai-empty');
+      li.textContent = 'Start a conversation. Ask about your tasks, your day, or productivity.';
+      ul.append(li);
+      return;
+    }
+    c.messages.forEach((m) => {
+      const li = el('li', 'ai-msg ' + (m.role === 'user' ? 'user' : 'ai'));
+      const av = el('div', 'ai-av', m.role === 'user' ? 'You' : 'AI');
+      const bub = el('div', 'ai-bub', m.content);
+      li.append(av, bub);
+      ul.append(li);
+    });
     ul.scrollTop = ul.scrollHeight;
-    return li;
   }
 
   function showTyping() {
@@ -121,17 +209,11 @@
   }
 
   /* =========================================================
-     Conversation memory
+     System prompt
      ========================================================= */
-  const history = [];
-  const MAX_HISTORY = 12;
-
   function buildSystemPrompt() {
     let tasks = [];
-    try {
-      const r = JSON.parse(localStorage.getItem('priorityBoard.v1'));
-      if (Array.isArray(r)) tasks = r;
-    } catch (e) {}
+    try { const r = JSON.parse(localStorage.getItem('priorityBoard.v1')); if (Array.isArray(r)) tasks = r; } catch (e) {}
     const today = new Date().toISOString().slice(0, 10);
     const open = tasks.filter((t) => t.list !== 'done');
     const done = tasks.filter((t) => t.list === 'done');
@@ -139,65 +221,47 @@
     const overdue = open.filter((t) => t.due && t.due < today);
     const dueToday = open.filter((t) => t.due === today);
 
-    let s = 'You are Priority AI, a helpful assistant inside a personal task app called Priority. ';
-    s += 'The user\'s current task data:\n';
-    s += '- Total tasks: ' + tasks.length + ' (' + done.length + ' done, ' + open.length + ' open)\n';
-    s += '- In "Now" focus list: ' + now.length + (now.length ? ' (' + now.map((t) => '"' + t.title + '"').join(', ') + ')' : '') + '\n';
+    let s = 'You are Priority AI inside a personal task app. The user\'s data:\n';
+    s += '- Total: ' + tasks.length + ' tasks (' + done.length + ' done, ' + open.length + ' open)\n';
+    s += '- Now list: ' + now.length + (now.length ? ' (' + now.map((t) => '"' + t.title + '"').join(', ') + ')' : '') + '\n';
     s += '- Overdue: ' + overdue.length + (overdue.length ? ' (' + overdue.map((t) => '"' + t.title + '"').join(', ') + ')' : '') + '\n';
     s += '- Due today: ' + dueToday.length + (dueToday.length ? ' (' + dueToday.map((t) => '"' + t.title + '"').join(', ') + ')' : '') + '\n';
-    s += '\nBe concise (2-4 sentences), friendly, and practical. You can suggest priorities, give productivity tips, answer questions about their day, and help think through tasks. You cannot directly create or edit tasks — if the user wants to add one, remind them to use My Tasks or the quick-add bar. Speak naturally because replies may be read aloud.';
+    s += '\nBe concise (2-4 sentences), friendly, and practical. You cannot modify tasks. Speak naturally.';
     return { role: 'system', content: s };
   }
 
   /* =========================================================
      Groq API call
      ========================================================= */
-  async function sendToAI(userText) {
+  async function sendToAI(messages) {
     if (!GROQ_KEY || GROQ_KEY === 'gsk_YOUR_KEY_HERE') {
-      throw new Error('No API key. Open voice.js and paste your Groq key at the top.');
+      throw new Error('No API key. Paste your Groq key in voice.js.');
     }
-
-    history.push({ role: 'user', content: userText });
-    if (history.length > MAX_HISTORY) history.splice(0, history.length - MAX_HISTORY);
-
-    const messages = [buildSystemPrompt(), ...history];
-
     const res = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + GROQ_KEY
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY },
       body: JSON.stringify({
         model: GROQ_MODEL,
-        messages,
+        messages: [buildSystemPrompt(), ...messages.slice(-12)],
         temperature: 0.7,
         max_tokens: 300
       })
     });
-
     if (!res.ok) {
       let detail = '';
-      try {
-        const j = await res.json();
-        detail = j.error?.message || j.error || '';
-      } catch (e) {}
-      throw new Error('Groq API ' + res.status + (detail ? ': ' + detail : ''));
+      try { const j = await res.json(); detail = j.error?.message || ''; } catch (e) {}
+      throw new Error('Groq ' + res.status + (detail ? ': ' + detail : ''));
     }
-
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content?.trim() || '';
-    if (!reply) throw new Error('Empty reply from Groq');
-
-    history.push({ role: 'assistant', content: reply });
+    if (!reply) throw new Error('Empty reply');
     return reply;
   }
 
   /* =========================================================
      Send handler
      ========================================================= */
-  const form = $('chat-form');
-  form.addEventListener('submit', async (e) => {
+  $('chat-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = $('chat-input');
     const text = input.value.trim();
@@ -206,27 +270,29 @@
     input.value = '';
     input.style.height = 'auto';
 
-    addMsg('user', text);
+    if (!currentConv()) newConversation();
+
+    pushMessage('user', text);
+
     const typing = showTyping();
     setStatus('Thinking…', 'warn');
 
     try {
-      const reply = await sendToAI(text);
+      const c = currentConv();
+      const reply = await sendToAI(c.messages.map((m) => ({ role: m.role, content: m.content })));
       typing.remove();
-      addMsg('ai', reply);
+      pushMessage('assistant', reply);
       say(reply);
       setStatus('Ready', 'ok');
     } catch (err) {
       typing.remove();
-      addMsg('ai', 'Sorry — ' + err.message);
+      pushMessage('assistant', 'Sorry — ' + err.message);
       setStatus('Error', 'error');
       console.error('[Priority AI]', err);
     }
   });
 
-  /* =========================================================
-     Textarea auto-resize + Enter to send
-     ========================================================= */
+  /* Auto-resize textarea */
   const input = $('chat-input');
   input.addEventListener('input', () => {
     input.style.height = 'auto';
@@ -235,33 +301,39 @@
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      form.requestSubmit();
+      $('chat-form').requestSubmit();
     }
   });
 
-  /* =========================================================
-     Clear chat
-     ========================================================= */
+  /* New chat / clear */
+  $('new-chat').addEventListener('click', newConversation);
   $('clear-chat').addEventListener('click', () => {
-    history.length = 0;
-    $('chat').textContent = '';
-    showEmpty();
+    const c = currentConv();
+    if (!c) return;
+    if (!confirm('Clear this conversation?')) return;
+    c.messages = [];
+    c.title = 'New chat';
+    saveConvs();
+    renderConvList();
+    renderThread();
     setStatus('Ready', 'ok');
     if (synth) synth.cancel();
   });
 
-  function showEmpty() {
-    const li = el('li', 'ai-empty');
-    li.textContent = 'Ask about your tasks, your day, or productivity.';
-    $('chat').append(li);
-  }
-
   /* =========================================================
-     Greeting
+     Init
      ========================================================= */
-  addMsg('ai', 'Hi. I can help you think through your tasks, prioritize your day, or just talk. What\'s on your mind?');
+  if (!conversations.length) {
+    newConversation();
+  } else if (activeId) {
+    if (!conversations.find((c) => c.id === activeId)) {
+      saveActive(conversations[0].id);
+    }
+  } else {
+    saveActive(conversations[0].id);
+  }
+  renderConvList();
+  renderThread();
   setStatus('Ready', 'ok');
-
-  /* Focus input on load */
   setTimeout(() => input.focus(), 300);
 })();
