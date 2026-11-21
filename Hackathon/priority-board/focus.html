@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Focus Mode · Priority</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="focus.css">
+  <script src="app.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="nav-slot"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="top">
+      <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
+      <div class="ttl"><h1>Focus Mode</h1><p>One task. One timer. No distractions.</p></div>
+      <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+    </header>
+
+    <section class="strip" aria-label="Today's focus">
+      <div><div class="big" id="s-n">0</div><div class="lbl">sessions today</div></div>
+      <div><div class="big" id="s-m">0 min</div><div class="lbl">focused today</div></div>
+      <div><div class="big" id="s-all">0</div><div class="lbl">sessions all time</div></div>
+    </section>
+
+    <section class="stage" id="stage">
+      <div class="stage-bar">
+        <div class="seg-row" id="modes" role="group" aria-label="Timer style"></div>
+        <div class="stage-tools">
+          <button class="btn" id="fs" type="button">⛶ Full screen</button>
+          <button class="btn" id="zen" type="button">🧘 Zen mode</button>
+        </div>
+      </div>
+
+      <div class="custom" id="custom" hidden>
+        <label>Focus <input id="c-focus" type="number" min="1" max="180" value="30"> min</label>
+        <label>Break <input id="c-break" type="number" min="1" max="60" value="5"> min</label>
+      </div>
+
+      <p class="phase" id="phase">Focus</p>
+      <h2 class="now-task" id="now-task">Free focus</h2>
+
+      <div class="ring-wrap">
+        <svg viewBox="0 0 260 260" class="ring-svg" aria-hidden="true">
+          <circle class="track" cx="130" cy="130" r="120"></circle>
+          <circle class="prog" id="prog" cx="130" cy="130" r="120"></circle>
+        </svg>
+        <div class="clock" id="clock" role="timer">25:00</div>
+      </div>
+
+      <div class="ctrl">
+        <button class="btn btn-primary big-btn" id="go" type="button">Start</button>
+        <button class="btn" id="skip" type="button">Skip</button>
+        <button class="btn" id="reset" type="button">Reset</button>
+      </div>
+
+      <div class="pick">
+        <label for="task-sel">Working on</label>
+        <select id="task-sel"></select>
+        <button class="btn" id="task-done" type="button">Mark task done</button>
+      </div>
+
+      <label class="auto"><input type="checkbox" id="auto"> Start the next round automatically</label>
+
+      <div class="music" aria-label="Focus music">
+        <b>🎵 Music</b>
+        <div class="m-tracks" id="m-tracks"></div>
+        <input class="range" id="m-vol" type="range" min="0" max="1" step="0.05" aria-label="Volume">
+      </div>
+    </section>
+  </div>
+</div>
+<script src="focus.js"></script>
+</body>
+</html>

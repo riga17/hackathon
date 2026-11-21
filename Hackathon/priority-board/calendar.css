@@ -1,0 +1,59 @@
+.ttl{flex:1;min-width:0}
+.ttl h1{font-size:1.9rem;line-height:1.1}
+.ttl p{margin:2px 0 0;color:var(--muted)}
+.nav-btns{display:flex;gap:8px;align-items:center}
+#today{padding:11px 20px}
+
+.cal-wrap{display:grid;grid-template-columns:1fr 330px;gap:16px;align-items:start}
+.cal{background:var(--surface);border-radius:28px;padding:16px;box-shadow:var(--shadow)}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+.dow span{text-align:center;font-weight:800;font-size:.82rem;color:var(--muted);padding:6px 0}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+
+.day{position:relative;min-height:108px;min-width:0;background:var(--bg);border:2px solid transparent;border-radius:16px;padding:8px 8px 6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:inherit;transition:border-color .15s,background .15s}
+.day:hover{border-color:var(--border)}
+.day.other{opacity:.45}
+.day.sel{border-color:var(--accent);background:var(--soft)}
+.day.drop{border-color:var(--accent);border-style:dashed}
+.num{font:700 .95rem var(--head);width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
+.day.today .num{background:var(--accent);color:#fff}
+
+.ch{display:block;width:100%;font-size:.74rem;font-weight:700;line-height:1.25;padding:3px 7px;border-radius:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:grab;background:color-mix(in srgb,var(--c) 20%,transparent);color:var(--text);border-left:4px solid var(--c)}
+.ch.done{text-decoration:line-through;opacity:.55}
+.ch.dragging{opacity:.3}
+.more{font-size:.74rem;font-weight:800;color:var(--muted);padding-left:4px}
+.p-high{--c:hsl(0 85% 62%)}.p-medium{--c:hsl(38 95% 55%)}.p-low{--c:hsl(150 60% 45%)}
+
+.legend{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:14px 6px 2px;font-size:.85rem;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
+.tip{margin-left:auto}
+
+/* Day panel */
+.day-panel{position:sticky;top:20px;background:var(--surface);border-radius:28px;padding:22px;box-shadow:var(--shadow)}
+.dp-eyebrow{margin:0 0 2px;color:var(--accent);font-weight:800;font-size:.9rem}
+.day-panel h2{font-size:1.5rem;line-height:1.15;margin-bottom:16px}
+.dp-list{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto}
+.dp-item{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:16px;padding:11px 12px;border-left:5px solid var(--c)}
+.dp-item .chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--c);background:transparent;cursor:pointer;flex:none;display:grid;place-items:center;color:#fff;font-size:.8rem;padding:0}
+.dp-item.done .chk{background:var(--c)}
+.dp-item .tx{flex:1;min-width:0;font-weight:700;word-break:break-word}
+.dp-item.done .tx{text-decoration:line-through;color:var(--muted)}
+.dp-item small{display:block;color:var(--muted);font-weight:600}
+.dp-item .x{border:0;background:transparent;cursor:pointer;color:var(--muted);border-radius:8px;padding:3px 7px}
+.dp-item .x:hover{background:var(--soft);color:var(--text)}
+.dp-empty{text-align:center;color:var(--muted);padding:22px 10px;border:2px dashed var(--border);border-radius:16px}
+.dp-add{display:grid;gap:8px}
+.dp-add input,.dp-add select{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:11px 14px;width:100%}
+.dp-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+
+@media(max-width:1100px){.cal-wrap{grid-template-columns:1fr}.day-panel{position:static}.tip{margin-left:0}}
+@media(max-width:640px){
+  .cal{padding:10px}.days,.dow{gap:3px}
+  .day{min-height:62px;padding:5px;align-items:center}
+  .ch{width:8px;height:8px;padding:0;border-radius:50%;font-size:0;border:0;background:var(--c);display:inline-block}
+  .chips{display:flex;flex-wrap:wrap;gap:3px;justify-content:center}
+  .more{display:none}
+  .ttl h1{font-size:1.4rem}
+  .nav-btns .btn{padding:10px 14px}
+}
