@@ -25,6 +25,9 @@
 
     <!-- Hero focus card -->
     <section class="focus-hero">
+      <!-- Bubbles inside the focus card -->
+      <div class="hero-bubbles" id="hero-bubbles"></div>
+
       <div class="focus-top">
         <span class="focus-label" id="focus-label">Ready to focus</span>
         <span class="focus-streak" id="focus-streak"></span>
@@ -37,7 +40,10 @@
         <button class="btn" id="pick-btn" type="button">Choose a task</button>
       </div>
 
-      <div class="focus-timer" id="focus-timer">25:00</div>
+      <!-- Timer with bubbles behind it -->
+      <div class="focus-timer-wrap">
+        <div class="focus-timer" id="focus-timer">25:00</div>
+      </div>
 
       <div class="focus-actions">
         <button class="btn btn-primary" id="start-btn" type="button">Start focus</button>
@@ -123,6 +129,9 @@
 
 <!-- Zen mode overlay -->
 <div class="zen" id="zen" hidden>
+  <!-- Bubbles fill the whole screen in Zen mode -->
+  <div class="zen-bubbles" id="zen-bubbles"></div>
+
   <button class="zen-exit" id="zen-exit" type="button" aria-label="Exit Zen Mode" data-icon="x"></button>
   <div class="zen-inner">
     <p class="zen-label" id="zen-label">Focusing on</p>

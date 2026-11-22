@@ -61,7 +61,6 @@
     $('focus-streak').textContent = FS.count ? FS.count + ' session' + (FS.count === 1 ? '' : 's') + ' today' : '';
 
     if (FS.type === 'break') {
-      $('ft-eyebrow') || null;
       $('ft-title').textContent = 'Take a break';
       $('ft-sub').textContent = 'Step away from the screen for a moment.';
       $('pick-btn').hidden = true;
@@ -115,6 +114,42 @@
     t.className = 'zen-timer' + (mode === 'paused' ? ' paused' : FS.type === 'break' ? ' break' : '');
     t.textContent = fmtClock();
     $('zen-toggle').textContent = mode === 'running' ? 'Pause' : mode === 'paused' ? 'Resume' : 'Start';
+  }
+
+  /* =========================================================
+     Bubbles (Focus Page + Zen Mode)
+     ========================================================= */
+  function spawnBubbles(containerId, count) {
+    const container = $(containerId);
+    if (!container) return;
+    container.innerHTML = ''; 
+
+    for (let i = 0; i < count; i++) {
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      
+      const size = Math.random() * 40 + 10; // 10px to 50px
+      bubble.style.width = `${size}px`;
+      bubble.style.height = `${size}px`;
+      
+      bubble.style.left = `${Math.random() * 100}%`;
+      
+      const duration = Math.random() * 5 + 4; // 4s to 9s
+      bubble.style.animationDuration = `${duration}s`;
+      
+      // Negative delay makes them instantly pop up on screen
+      bubble.style.animationDelay = `${Math.random() * duration * -1}s`; 
+      
+      container.appendChild(bubble);
+    }
+  }
+
+  function createHeroBubbles() {
+    spawnBubbles('hero-bubbles', 15); // 15 bubbles for the card
+  }
+
+  function createZenBubbles() {
+    spawnBubbles('zen-bubbles', 40); // 40 bubbles for the full screen
   }
 
   /* =========================================================
@@ -246,6 +281,7 @@
     zenActive = true;
     $('zen').hidden = false;
     document.body.style.overflow = 'hidden';
+    createZenBubbles(); // Generate full-screen bubbles
     renderZen();
   }
   function exitZen() {
@@ -294,5 +330,7 @@
     }
   });
 
+  // Boot up
+  createHeroBubbles(); // Start the bubbles on the timer card immediately
   render();
 })();

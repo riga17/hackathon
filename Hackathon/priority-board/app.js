@@ -127,89 +127,174 @@
   }
 
   /* =========================================================
-     Generated music (rain / ocean / lo-fi / focus)
+     Generated music — 22 ambient tracks
      ========================================================= */
   const TRACKS = [
-    { id: 'rain', name: 'Rain', desc: 'Soft steady rain' },
-    { id: 'ocean', name: 'Ocean', desc: 'Slow rolling waves' },
-    { id: 'lofi', name: 'Lo-fi chill', desc: 'Mellow chords' },
-    { id: 'focus', name: 'Deep focus', desc: 'Warm brown noise' }
+    { id: 'rain',        name: 'Rain',           desc: 'Soft steady rain',        icon: '🌧️', kind: 'rain' },
+    { id: 'heavy_rain',  name: 'Heavy rain',     desc: 'Denser rainfall',         icon: '🌧️', kind: 'rain', hp: 500,  lp: 9000 },
+    { id: 'drizzle',     name: 'Drizzle',        desc: 'Light pattering',         icon: '🌦️', kind: 'rain', hp: 1400, lp: 8500 },
+    { id: 'thunder',     name: 'Thunder',        desc: 'Rain with low rumble',    icon: '⛈️', kind: 'rain', hp: 700,  lp: 8000, rumble: true },
+    { id: 'ocean',       name: 'Ocean',          desc: 'Slow rolling waves',      icon: '🌊', kind: 'ocean' },
+    { id: 'deep_ocean',  name: 'Deep ocean',     desc: 'Dark and low',            icon: '🌊', kind: 'ocean', freq: 0.06, lp: 380 },
+    { id: 'shore',       name: 'Shoreline',      desc: 'Gentle lapping',          icon: '🏖️', kind: 'ocean', freq: 0.16, lp: 700 },
+    { id: 'lofi',        name: 'Lo-fi chill',    desc: 'Mellow chords',           icon: '🎧', kind: 'lofi' },
+    { id: 'lofi_slow',   name: 'Slow lo-fi',     desc: 'Slower chord change',     icon: '🎧', kind: 'lofi', interval: 3600 },
+    { id: 'lofi_night',  name: 'Night lo-fi',    desc: 'Lower register chords',   icon: '🌙', kind: 'lofi', shift: -2 },
+    { id: 'lofi_bright', name: 'Bright lo-fi',   desc: 'Higher register chords',  icon: '☀️', kind: 'lofi', shift: 2 },
+    { id: 'focus',       name: 'Deep focus',     desc: 'Warm brown noise',        icon: '🧠', kind: 'brown', lp: 900 },
+    { id: 'brown_low',   name: 'Brown low',      desc: 'Very dark brown noise',   icon: '🧠', kind: 'brown', lp: 500 },
+    { id: 'pink',        name: 'Pink noise',     desc: 'Balanced full spectrum',  icon: '🎚️', kind: 'pink' },
+    { id: 'white',       name: 'White noise',    desc: 'Bright and flat',         icon: '⚪', kind: 'white' },
+    { id: 'wind',        name: 'Wind',           desc: 'Soft airy breeze',        icon: '🍃', kind: 'wind' },
+    { id: 'forest',      name: 'Forest wind',    desc: 'Rustling trees',          icon: '🌲', kind: 'wind', lp: 1400 },
+    { id: 'cave',        name: 'Cave hum',       desc: 'Low droning hum',         icon: '🪨', kind: 'drone', freq: 55 },
+    { id: 'drone_deep',  name: 'Deep drone',     desc: 'Dark sustained tone',     icon: '🎛️', kind: 'drone', freq: 40 },
+    { id: 'drone_open',  name: 'Open fifth',     desc: 'Two-tone fifth drone',    icon: '🎼', kind: 'drone2', freq: 110 },
+    { id: 'bells',       name: 'Soft bells',     desc: 'Sparse gentle chimes',    icon: '🔔', kind: 'bells' },
+    { id: 'night',       name: 'Night ambience', desc: 'Low hum + quiet air',     icon: '🌌', kind: 'night' }
   ];
-  const M = { ctx: null, gain: null, iv: null };
+  const M = { ctx: null, gain: null, iv: null, current: '' };
   const emit = () => window.dispatchEvent(new Event('musicchange'));
 
-  function noise(c, brown) {
-    const n = c.sampleRate * 2, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
-    let l = 0;
+  function noiseBuf(c, kind) {
+    const n = c.sampleRate * 2;
+    const b = c.createBuffer(1, n, c.sampleRate);
+    const d = b.getChannelData(0);
+    let l = 0, b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
     for (let i = 0; i < n; i++) {
       const w = Math.random() * 2 - 1;
-      if (brown) { l = (l + 0.02 * w) / 1.02; d[i] = l * 3.5; } else d[i] = w * 0.5;
+      if (kind === 'brown') { l = (l + 0.02 * w) / 1.02; d[i] = l * 3.5; }
+      else if (kind === 'pink') {
+        b0 = 0.99886 * b0 + w * 0.0555179;
+        b1 = 0.99332 * b1 + w * 0.0750759;
+        b2 = 0.96900 * b2 + w * 0.1538520;
+        b3 = 0.86650 * b3 + w * 0.3104856;
+        b4 = 0.55000 * b4 + w * 0.5329522;
+        b5 = -0.7616 * b5 - w * 0.0168980;
+        d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+        b6 = w * 0.115926;
+      }
+      else d[i] = w * 0.5;
     }
     const s = c.createBufferSource();
-    s.buffer = b;
-    s.loop = true;
-    s.start();
+    s.buffer = b; s.loop = true; s.start();
     return s;
   }
-  const filt = (c, type, f) => { const n = c.createBiquadFilter(); n.type = type; n.frequency.value = f; return n; };
+  const filt = (c, type, f, q) => { const n = c.createBiquadFilter(); n.type = type; n.frequency.value = f; if (q != null) n.Q.value = q; return n; };
   const chain = (src, nodes) => nodes.reduce((p, n) => { p.connect(n); return n; }, src);
 
   function stop() {
     clearInterval(M.iv);
-    if (M.ctx) { M.ctx.close(); M.ctx = null; M.gain = null; }
+    if (M.ctx) { try { M.ctx.close(); } catch (e) {} M.ctx = null; M.gain = null; }
+    M.current = '';
     emit();
   }
 
-  function play(id) {
-    stop();
-    set({ track: id });
-    const c = M.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const m = M.gain = c.createGain();
-    m.gain.value = S.vol;
-    m.connect(c.destination);
-
-    if (id === 'rain') {
-      chain(noise(c), [filt(c, 'highpass', 900), filt(c, 'lowpass', 7000), m]);
-    } else if (id === 'focus') {
-      chain(noise(c, 1), [filt(c, 'lowpass', 900), m]);
-    } else if (id === 'ocean') {
+  function buildTrack(c, m, def) {
+    const k = def.kind;
+    if (k === 'rain') {
+      const nodes = [filt(c, 'highpass', def.hp || 900), filt(c, 'lowpass', def.lp || 7000), m];
+      chain(noiseBuf(c), nodes);
+      if (def.rumble) {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = 'sine'; o.frequency.value = 45;
+        g.gain.value = 0.08;
+        o.connect(g); g.connect(m); o.start();
+        const lfo = c.createOscillator(), lg = c.createGain();
+        lfo.frequency.value = 0.12; lg.gain.value = 0.05;
+        lfo.connect(lg); lg.connect(g.gain); lfo.start();
+      }
+    } else if (k === 'ocean') {
       const g = c.createGain(), o = c.createOscillator(), d = c.createGain();
       g.gain.value = 0.55;
-      o.frequency.value = 0.1;
+      o.frequency.value = def.freq || 0.1;
       d.gain.value = 0.4;
-      o.connect(d);
-      d.connect(g.gain);
-      o.start();
-      chain(noise(c, 1), [filt(c, 'lowpass', 500), g, m]);
-    } else {
-      const v = c.createGain();
-      v.gain.value = 0.04;
-      chain(noise(c), [filt(c, 'highpass', 3500), v, m]);
+      o.connect(d); d.connect(g.gain); o.start();
+      chain(noiseBuf(c, 'brown'), [filt(c, 'lowpass', def.lp || 500), g, m]);
+    } else if (k === 'brown') {
+      chain(noiseBuf(c, 'brown'), [filt(c, 'lowpass', def.lp || 900), m]);
+    } else if (k === 'pink') {
+      chain(noiseBuf(c, 'pink'), [filt(c, 'lowpass', 6000), m]);
+    } else if (k === 'white') {
+      chain(noiseBuf(c, 'white'), [filt(c, 'lowpass', 9000), m]);
+    } else if (k === 'wind') {
+      const g = c.createGain(); g.gain.value = 0.6;
+      const lfo = c.createOscillator(), lg = c.createGain();
+      lfo.frequency.value = 0.07; lg.gain.value = 400;
+      const bp = filt(c, 'bandpass', 700, 0.6);
+      lfo.connect(lg); lg.connect(bp.frequency); lfo.start();
+      chain(noiseBuf(c, 'pink'), [filt(c, 'highpass', 200), bp, g, m]);
+    } else if (k === 'drone' || k === 'drone2') {
+      const freqs = k === 'drone2' ? [def.freq || 110, (def.freq || 110) * 1.5] : [def.freq || 55];
+      freqs.forEach((f) => {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = 'sine'; o.frequency.value = f; g.gain.value = 0.12;
+        o.connect(g); g.connect(m); o.start();
+      });
+      const air = c.createGain(); air.gain.value = 0.04;
+      chain(noiseBuf(c, 'brown'), [filt(c, 'lowpass', 600), air, m]);
+    } else if (k === 'bells') {
+      const scale = [523.25, 587.33, 659.25, 783.99, 880];
+      const chime = () => {
+        const f = scale[Math.floor(Math.random() * scale.length)];
+        const o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.15, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 3);
+        o.connect(g); g.connect(m);
+        o.start(t); o.stop(t + 3.1);
+      };
+      chime();
+      M.iv = setInterval(chime, 2200 + Math.random() * 1800);
+      const air = c.createGain(); air.gain.value = 0.02;
+      chain(noiseBuf(c, 'pink'), [filt(c, 'lowpass', 1200), air, m]);
+    } else if (k === 'night') {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = 80; g.gain.value = 0.06;
+      o.connect(g); g.connect(m); o.start();
+      const air = c.createGain(); air.gain.value = 0.05;
+      chain(noiseBuf(c, 'brown'), [filt(c, 'lowpass', 400), air, m]);
+    } else if (k === 'lofi') {
+      const v = c.createGain(); v.gain.value = 0.04;
+      chain(noiseBuf(c, 'white'), [filt(c, 'highpass', 3500), v, m]);
       const CH = [
         [220, 261.6, 329.6, 392],
         [174.6, 220, 261.6, 329.6],
         [130.8, 196, 246.9, 329.6],
         [196, 246.9, 293.7, 329.6]
       ];
+      const shift = def.shift || 0;
       let i = 0;
       const chord = () => {
         const t = c.currentTime;
-        CH[i++ % 4].forEach((f, k) => {
-          const o = c.createOscillator(), g = c.createGain(), s = t + k * 0.12;
+        CH[i++ % 4].forEach((f, k2) => {
+          const o = c.createOscillator(), g = c.createGain(), s = t + k2 * 0.12;
           o.type = 'triangle';
-          o.frequency.value = f;
+          o.frequency.value = f * Math.pow(2, shift / 12);
           g.gain.setValueAtTime(0.0001, s);
           g.gain.linearRampToValueAtTime(0.3, s + 0.15);
           g.gain.exponentialRampToValueAtTime(0.001, t + 2.6);
-          o.connect(g);
-          g.connect(m);
-          o.start(s);
-          o.stop(t + 2.7);
+          o.connect(g); g.connect(m);
+          o.start(s); o.stop(t + 2.7);
         });
       };
       chord();
-      M.iv = setInterval(chord, 2600);
+      M.iv = setInterval(chord, def.interval || 2600);
     }
+  }
+
+  function play(id) {
+    stop();
+    set({ track: id });
+    const def = TRACKS.find((t) => t.id === id);
+    if (!def) return;
+    const c = M.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const m = M.gain = c.createGain();
+    m.gain.value = S.vol;
+    m.connect(c.destination);
+    M.current = id;
+    buildTrack(c, m, def);
     emit();
   }
 
@@ -228,7 +313,15 @@
     mode,
     toast,
     icon,
-    music: { tracks: TRACKS, play, stop, setVol, on: () => !!M.ctx }
+    music: {
+      tracks: TRACKS,
+      play,
+      stop,
+      setVol,
+      current: () => M.current,
+      on: () => !!M.ctx,
+      onChange: (fn) => window.addEventListener('musicchange', fn)
+    }
   };
 
   /* =========================================================
@@ -264,6 +357,8 @@
     const slot = document.getElementById('nav-slot');
     if (slot) {
       const page = location.pathname.split('/').pop() || 'home.php';
+      
+      // --- Sidebar HTML with Glassy Bubbles ---
       slot.innerHTML =
         '<a class="brand" href="home.php"><b>' + icon('check', 18) + '</b>Priority</a>' +
         '<nav aria-label="Main">' +
@@ -274,37 +369,63 @@
             '><i>' + icon(n[1]) + '</i>' + n[0] + '</a>'
         ).join('') +
         '</nav>' +
+        // Music Panel
         '<div class="mini">' +
-          '<b>' + icon('music', 18) + ' Music</b>' +
-          '<div class="row">' +
-            '<select id="mp-track" aria-label="Track">' +
-              TRACKS.map((t) => '<option value="' + t.id + '">' + t.name + '</option>').join('') +
-            '</select>' +
-            '<button id="mp-play" type="button">Play</button>' +
+          '<b style="position:relative;z-index:2">' + icon('music', 18) + ' Music</b>' +
+          
+          // The glassy bubble visualizer
+          '<div class="mp-bubbles-wrap">' +
+            '<div class="mp-bubbles">' +
+              '<span style="width:14px;height:14px;left:10%;animation-duration:6s;animation-delay:0s"></span>' +
+              '<span style="width:8px;height:8px;left:30%;animation-duration:5s;animation-delay:1.5s"></span>' +
+              '<span style="width:20px;height:20px;left:55%;animation-duration:7s;animation-delay:0.5s"></span>' +
+              '<span style="width:10px;height:10px;left:75%;animation-duration:4.5s;animation-delay:2.5s"></span>' +
+              '<span style="width:16px;height:16px;left:90%;animation-duration:6.5s;animation-delay:3.2s"></span>' +
+              '<span style="width:12px;height:12px;left:20%;animation-duration:5.5s;animation-delay:4s"></span>' +
+            '</div>' +
           '</div>' +
-          '<input id="mp-vol" type="range" min="0" max="1" step="0.05" aria-label="Volume">' +
-          '<a class="mp-spotify" href="https://open.spotify.com" target="_blank" rel="noopener">' +
-            icon('external', 14) + ' <span>Open Spotify</span>' +
-          '</a>' +
+
+          '<div class="mp-now" id="mp-now" style="position:relative;z-index:2">Nothing playing</div>' +
+          
+          '<select id="mp-select" aria-label="Choose a track" style="position:relative;z-index:2; width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.85rem"></select>' +
+          
+          '<div class="row" style="position:relative;z-index:2; margin-top:6px">' +
+            '<button id="mp-play" type="button" style="flex:1">Play</button>' +
+            '<button id="mp-stop" type="button" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border)">Stop</button>' +
+          '</div>' +
+          '<input id="mp-vol" type="range" min="0" max="1" step="0.05" aria-label="Volume" style="position:relative;z-index:2">' +
         '</div>';
 
-      const sel = document.getElementById('mp-track');
+      const sel = document.getElementById('mp-select');
       const btn = document.getElementById('mp-play');
+      const stopB = document.getElementById('mp-stop');
       const vol = document.getElementById('mp-vol');
+      const now = document.getElementById('mp-now');
 
-      const sync = () => {
-        sel.value = S.track;
+      sel.innerHTML = TRACKS.map((t) => '<option value="' + t.id + '">' + t.icon + ' ' + t.name + '</option>').join('');
+      sel.value = S.track;
+
+      function renderNow() {
+        const cur = M.current;
+        const t = TRACKS.find((x) => x.id === cur);
+        now.textContent = t ? ('Playing: ' + t.name) : 'Nothing playing';
+        btn.textContent = cur ? 'Stop' : 'Play';
         vol.value = S.vol;
-        btn.textContent = M.ctx ? 'Stop' : 'Play';
-      };
-      sync();
+        if (cur) sel.value = cur;
+      }
 
-      btn.addEventListener('click', () => (M.ctx ? stop() : play(sel.value)));
+      btn.addEventListener('click', () => {
+        if (M.current) stop();
+        else play(sel.value);
+      });
+      stopB.addEventListener('click', () => stop());
       sel.addEventListener('change', () => {
-        if (M.ctx) play(sel.value); else set({ track: sel.value });
+        if (M.current) play(sel.value);
       });
       vol.addEventListener('input', () => setVol(+vol.value));
-      window.addEventListener('musicchange', sync);
+
+      renderNow();
+      window.addEventListener('musicchange', renderNow);
 
       /* Mobile menu */
       const sc = document.getElementById('scrim');

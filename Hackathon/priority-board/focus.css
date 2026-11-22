@@ -10,13 +10,14 @@
    ========================================================= */
 .focus-hero{
   position:relative;
-  overflow:hidden;
+  overflow:hidden; /* This keeps the bubbles inside the card */
   background:var(--surface);
   border-radius:32px;
   box-shadow:var(--shadow);
   padding:34px 30px 30px;
   margin-bottom:18px;
   text-align:center;
+  isolation:isolate;
 }
 .focus-hero::before{
   content:"";
@@ -31,7 +32,8 @@
   opacity:.75;
   pointer-events:none;
 }
-.focus-hero>*{position:relative}
+/* Ensure the card content stays above the bubbles */
+.focus-hero>*{position:relative; z-index: 2;}
 
 .focus-top{
   display:flex;
@@ -178,20 +180,30 @@ dialog h2{font-size:1.35rem}
   position:fixed;
   inset:0;
   z-index:100;
-  background:var(--bg);
+  background:linear-gradient(180deg, #0a0a1e 0%, #1a1a3e 100%);
   display:flex;
   align-items:center;
   justify-content:center;
   padding:24px;
   animation:zenFade .25s ease;
+  overflow:hidden;
 }
 @keyframes zenFade{from{opacity:0}to{opacity:1}}
 .zen[hidden]{display:none}
 
-.zen-inner{text-align:center;max-width:720px;width:100%}
+.zen .zen-label{color:rgba(255,255,255,0.6)}
+.zen .zen-task{color:#fff}
+.zen .zen-timer{color:#fff; text-shadow:0 0 40px rgba(150,200,255,0.4)}
+.zen .zen-btn{background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; backdrop-filter:blur(10px);}
+.zen .zen-btn:hover{background:rgba(255,255,255,0.2)}
+.zen .zen-btn-ghost{background:transparent; border-color:rgba(255,255,255,0.3); color:rgba(255,255,255,0.7);}
+.zen .zen-btn-ghost:hover{color:#fff; border-color:#fff}
+.zen .zen-exit{background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff;}
+.zen .zen-exit:hover{color:#fff; border-color:#fff}
+
+.zen-inner{text-align:center;max-width:720px;width:100%;position:relative;z-index:2}
 .zen-label{
   margin:0 0 6px;
-  color:var(--muted);
   font-size:.85rem;
   font-weight:800;
   letter-spacing:.06em;
@@ -201,35 +213,36 @@ dialog h2{font-size:1.35rem}
   font-size:clamp(1.6rem,4vw,2.6rem);
   line-height:1.15;
   margin:0 0 32px;
-  color:var(--text);
   word-break:break-word;
 }
+
+.zen-timer-wrap {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto 40px;
+  padding: 20px 60px;
+  border-radius: 40px;
+}
+
 .zen-timer{
   font:700 clamp(5rem,18vw,12rem) var(--head);
   line-height:.95;
   letter-spacing:-.04em;
   font-variant-numeric:tabular-nums;
-  color:var(--accent);
-  margin-bottom:40px;
-  transition:color .3s;
+  position: relative;
+  z-index: 2;
 }
-.zen-timer.paused{color:hsl(38 95% 55%)}
-.zen-timer.break{color:hsl(215 80% 58%)}
 
-.zen-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.zen-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:2;}
 .zen-btn{
   font:700 1.1rem var(--body);
   padding:16px 40px;
   border-radius:99px;
   border:0;
-  background:var(--accent);
-  color:#fff;
   cursor:pointer;
   transition:transform .12s,opacity .15s;
 }
-.zen-btn:hover{transform:translateY(-2px);opacity:.92}
-.zen-btn-ghost{background:transparent;color:var(--muted);border:2px solid var(--border)}
-.zen-btn-ghost:hover{color:var(--accent);border-color:var(--accent)}
+.zen-btn:hover{transform:translateY(-2px)}
 
 .zen-exit{
   position:fixed;
@@ -238,14 +251,48 @@ dialog h2{font-size:1.35rem}
   width:46px;
   height:46px;
   border-radius:50%;
-  border:1px solid var(--border);
-  background:var(--surface);
-  color:var(--muted);
   cursor:pointer;
   display:grid;
   place-items:center;
+  z-index:10;
 }
-.zen-exit:hover{color:var(--accent);border-color:var(--accent)}
+
+/* =========================================================
+   Bubbles (Used in both Zen Mode and Focus Hero)
+   ========================================================= */
+.zen-bubbles, .hero-bubbles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.zen-bubbles { z-index: 1; border-radius: 40px; }
+.hero-bubbles { z-index: 1; border-radius: 32px; }
+
+.bubble {
+  position: absolute;
+  bottom: -50px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), rgba(150,200,255,0.1));
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: inset 0 0 10px rgba(255,255,255,0.3), 0 0 15px rgba(150,200,255,0.2);
+  animation: floatUp linear infinite;
+}
+
+/* Make hero bubbles a bit more subtle so text stays readable */
+.hero-bubbles .bubble {
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(var(--accent-rgb, 200, 150, 255), 0.05));
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
+  opacity: 0.7;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { transform: translateY(-300px) scale(1.2); opacity: 0; }
+}
 
 /* =========================================================
    Responsive
@@ -255,6 +302,7 @@ dialog h2{font-size:1.35rem}
   .focus-grid{grid-template-columns:1fr}
   .span-2{grid-column:auto}
   .focus-tips{grid-template-columns:1fr}
+  .zen-timer-wrap { padding: 10px 20px; }
 }
 @media(max-width:600px){
   .focus-hero{padding:26px 18px 22px;border-radius:24px}
