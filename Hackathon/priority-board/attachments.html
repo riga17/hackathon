@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Attachments · Priority</title>
+  <title>Scanner · Priority</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="attachments.css">
@@ -18,73 +18,96 @@
   <div class="main">
     <header class="top">
       <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu" data-icon="grid"></button>
-      <div class="ttl"><h1>Scanner</h1><p id="sub">Scan notes, receipts, or anything with text.</p></div>
+      <div class="ttl"><h1>Scanner</h1><p id="sub">Extract text from photos instantly.</p></div>
       <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
     </header>
 
-    <!-- Scanner hero -->
-    <section class="scan-hero">
-      <div class="scan-zone" id="scan-zone">
-        <div class="scan-frame">
-          <div class="scan-corner tl"></div>
-          <div class="scan-corner tr"></div>
-          <div class="scan-corner bl"></div>
-          <div class="scan-corner br"></div>
-          <div class="scan-line"></div>
-          <div class="scan-icon" id="scan-icon"></div>
-          <p class="scan-title" id="scan-title">Drop a photo here</p>
-          <p class="scan-sub" id="scan-sub">Or click to choose a photo. We'll read the text for you.</p>
+    <!-- Modern Scanner View -->
+    <section class="scanner-view">
+      <div class="scanner-zone" id="scan-zone">
+        <div class="scan-bracket top-left"></div>
+        <div class="scan-bracket top-right"></div>
+        <div class="scan-bracket bottom-left"></div>
+        <div class="scan-bracket bottom-right"></div>
+
+        <div class="scan-laser"></div>
+
+        <div class="scanner-content">
+          <div class="scanner-icon" id="scanner-icon"></div>
+          <h2 class="scanner-title" id="scanner-title">Tap to scan a document</h2>
+          <p class="scanner-sub" id="scanner-sub">Drag & drop an image here, or click to browse.</p>
         </div>
       </div>
 
-      <div class="scan-actions">
-        <button class="btn btn-primary" id="pick-photo" type="button">Choose photo</button>
-        <button class="btn" id="use-camera" type="button">Use camera</button>
+      <div class="scanner-actions">
+        <button class="btn btn-primary btn-scan" id="pick-photo" type="button">Choose photo</button>
+        <button class="btn btn-glass" id="use-camera" type="button">Use camera</button>
+        <button class="btn btn-glass" id="upload-btn" type="button">Upload other file</button>
       </div>
 
       <input type="file" id="photo-input" accept="image/*" hidden>
       <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+      <input type="file" id="file-input" multiple hidden>
     </section>
 
-    <!-- Scanning progress -->
-    <div class="scan-progress" id="scan-progress" hidden>
-      <div class="sp-head">
-        <span class="sp-label">Scanning…</span>
-        <span class="sp-pct" id="sp-pct">0%</span>
+    <!-- Scanning Progress -->
+    <div class="scan-loading" id="scan-progress" hidden>
+      <div class="sl-header">
+        <span class="sl-title">Scanning document</span>
+        <span class="sl-pct" id="sp-pct">0%</span>
       </div>
-      <div class="sp-bar"><i id="sp-fill"></i></div>
-      <p class="sp-hint" id="sp-hint">Reading the text. This takes a few seconds.</p>
+      <div class="sl-bar"><i id="sp-fill"></i></div>
+      <p class="sl-hint" id="sp-hint">Reading the text...</p>
     </div>
 
-    <!-- Tabs -->
-    <div class="tab-row">
-      <button class="tab on" data-tab="scans" type="button">Scanned notes</button>
-      <button class="tab" data-tab="files" type="button">Other files</button>
-      <button class="tab" data-tab="all" type="button">All</button>
-    </div>
+    <!-- Filters & Search -->
+    <div class="scanner-controls">
+      <div class="tab-row">
+        <button class="tab on" data-tab="scans" type="button">Scanned notes</button>
+        <button class="tab" data-tab="files" type="button">Other files</button>
+        <button class="tab" data-tab="all" type="button">All</button>
+      </div>
 
-    <!-- Search -->
-    <div class="tools">
-      <label class="sr-only" for="q">Search</label>
-      <input id="q" type="search" placeholder="Search by text or name…">
-      <button class="btn btn-line" id="upload-btn" type="button">+ Upload file</button>
-      <input type="file" id="file-input" multiple hidden>
-      <span class="storage-pill" id="storage"></span>
+      <div class="search-wrap">
+        <label class="sr-only" for="q">Search</label>
+        <input id="q" type="search" placeholder="Search text or filename…">
+        <span class="storage-pill" id="storage"></span>
+      </div>
     </div>
 
     <!-- Grid -->
     <div class="grid-a" id="grid"></div>
-
-    <!-- Preview dialog -->
-    <dialog id="preview">
-      <div class="pv-head">
-        <h2 id="pv-name"></h2>
-        <button class="mini-b" id="pv-close" type="button" aria-label="Close preview">✕</button>
-      </div>
-      <div class="pv-body" id="pv-body"></div>
-    </dialog>
   </div>
 </div>
+
+<!-- Viewer (opens inside the app) -->
+<dialog id="viewer" aria-labelledby="v-title">
+  <header class="v-head">
+    <div class="v-titles">
+      <h2 id="v-title">File</h2>
+      <p id="v-meta"></p>
+    </div>
+    <button class="v-close" id="v-close" type="button" aria-label="Close viewer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </header>
+
+  <div class="v-body" id="v-body">
+    <div class="v-stage" id="v-stage"></div>
+    <div class="v-side" id="v-side">
+      <label class="v-label" for="v-text">Extracted text <span id="v-saved"></span></label>
+      <textarea id="v-text" spellcheck="false" placeholder="No text was found in this photo."></textarea>
+    </div>
+  </div>
+
+  <footer class="v-foot">
+    <button class="btn btn-primary" id="v-copy" type="button">Copy text</button>
+    <button class="btn" id="v-note" type="button">Save to Notes</button>
+    <button class="btn" id="v-dl" type="button">Download</button>
+    <button class="btn v-del" id="v-del" type="button">Delete</button>
+  </footer>
+</dialog>
+
 <script src="attachments.js"></script>
 </body>
 </html>

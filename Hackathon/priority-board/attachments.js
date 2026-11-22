@@ -15,15 +15,12 @@
   };
   let filter = { q: '', tab: 'scans' };
 
-  /* Icons */
   const menuBtn = $('menu-btn');
   if (menuBtn) menuBtn.innerHTML = icn('grid', 20);
-  const scanIcon = $('scan-icon');
-  if (scanIcon) scanIcon.innerHTML = icn('image', 30);
 
-  /* =========================================================
-     Types
-     ========================================================= */
+  const scanIcon = $('scanner-icon');
+  if (scanIcon) scanIcon.innerHTML = icn('image', 32);
+
   function typeOf(mime, name) {
     if (!mime) mime = '';
     if (mime.startsWith('image/')) return 'image';
@@ -48,15 +45,15 @@
   const isScanned = (f) => f.type === 'text' && f.scanned && f.text;
 
   /* =========================================================
-     Render
+     Grid
      ========================================================= */
   function render() {
     const grid = $('grid'); grid.textContent = '';
     const q = filter.q.toLowerCase();
     const list = files
       .filter((f) => {
-        if (filter.tab === 'scans') return isScanned(f);
-        if (filter.tab === 'files') return !isScanned(f);
+        if (filter.tab === 'scans') return f.scanned;
+        if (filter.tab === 'files') return !f.scanned;
         return true;
       })
       .filter((f) => {
@@ -80,11 +77,11 @@
 
     list.forEach((f) => {
       const card = el('div', 'file');
+      card.tabIndex = 0; card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', 'Open ' + f.name);
       const th = el('div', 'file-thumb');
 
-      if (f.data && f.type === 'image') {
-        const img = el('img'); img.src = f.data; img.alt = f.name; th.append(img);
-      } else if (f.scanned && f.data) {
+      if (f.data && (f.type === 'image' || f.scanned)) {
         const img = el('img'); img.src = f.data; img.alt = f.name; th.append(img);
       } else {
         th.innerHTML = icn(ICON[f.type] || 'folder', 40);
@@ -96,7 +93,7 @@
       card.append(th);
       card.append(el('div', 'file-name', f.name));
 
-      if (isScanned(f) && f.text) {
+      if (isScanned(f)) {
         card.append(el('div', 'file-scan-preview', f.text.slice(0, 140) + (f.text.length > 140 ? '…' : '')));
       }
 
@@ -107,16 +104,17 @@
       const acts = el('div', 'acts');
       const open = el('button', null, 'Open'); open.type = 'button';
       const del = el('button', 'del', 'Delete'); del.type = 'button';
-      open.onclick = (e) => { e.stopPropagation(); openPreview(f); };
+      open.onclick = (e) => { e.stopPropagation(); openViewer(f); };
       del.onclick = (e) => { e.stopPropagation(); removeFile(f.id); };
       acts.append(open, del);
       card.append(acts);
 
-      card.onclick = () => openPreview(f);
+      card.onclick = () => openViewer(f);
+      card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openViewer(f); } };
       grid.append(card);
     });
 
-    const scans = files.filter(isScanned).length;
+    const scans = files.filter((f) => f.scanned).length;
     $('sub').textContent = files.length
       ? scans + ' scanned · ' + (files.length - scans) + ' files · stored on this device'
       : 'Scan notes, receipts, or anything with text.';
@@ -124,7 +122,130 @@
   }
 
   /* =========================================================
-     Regular file upload
+     Viewer (opens inside the app)
+     ========================================================= */
+  const viewer = $('viewer');
+  let viewId = null, viewUrl = null, noteText = '', textTimer = null;
+
+  const findFile = (id) => files.find((f) => f.id === id);
+  function revokeView() { if (viewUrl) { URL.revokeObjectURL(viewUrl); viewUrl = null; } }
+
+  function extFor(f) {
+    const sub = ((f.mime || '').split('/')[1] || '').split('+')[0];
+    return sub && !/\.\w{2,4}$/.test(f.name) ? '.' + (sub === 'jpeg' ? 'jpg' : sub) : '';
+  }
+
+  async function openViewer(f) {
+    viewId = f.id;
+    revokeView();
+    $('v-title').textContent = f.name;
+    $('v-meta').textContent = (f.scanned ? 'Scanned note' : (LABEL[f.type] || 'File')) + ' · ' + fmtSize(f.size) + ' · ' + fmtDate(f.addedAt);
+    $('v-saved').textContent = '';
+
+    const stage = $('v-stage'); stage.textContent = '';
+    const side = $('v-side'), body = $('v-body');
+    const isImage = f.scanned || (f.mime || '').startsWith('image/') || f.type === 'image';
+
+    // Turn the stored data into a blob so PDFs and media open reliably
+    let src = f.data;
+    try { const blob = await (await fetch(f.data)).blob(); viewUrl = URL.createObjectURL(blob); src = viewUrl; } catch (e) {}
+
+    let hasText = false;
+    noteText = '';
+
+    if (isImage) {
+      const img = el('img'); img.src = src; img.alt = f.name; stage.append(img);
+    } else if (f.type === 'pdf') {
+      const fr = el('iframe'); fr.src = src; fr.title = f.name; stage.append(fr);
+    } else if (f.type === 'audio') {
+      const a = el('audio'); a.controls = true; a.src = src; stage.append(a);
+    } else if (f.type === 'video') {
+      const v = el('video'); v.controls = true; v.src = src; stage.append(v);
+    } else if (f.type === 'text') {
+      let t = '';
+      try { t = await (await fetch(f.data)).text(); } catch (e) {}
+      stage.append(el('pre', 'v-pre', t || 'This file is empty.'));
+      noteText = t; hasText = !!t;
+    } else {
+      const box = el('div', 'v-other');
+      box.innerHTML = icn('folder', 56);
+      box.append(el('p', null, 'This file type can\'t be previewed. Use Download to open it.'));
+      stage.append(box);
+    }
+
+    // Extracted text panel (scans only)
+    if (f.scanned) {
+      side.hidden = false; body.classList.remove('no-side');
+      $('v-text').value = f.text || '';
+      noteText = f.text || '';
+      hasText = !!(f.text && f.text.trim());
+    } else {
+      side.hidden = true; body.classList.add('no-side');
+    }
+
+    $('v-copy').hidden = !hasText;
+    $('v-note').hidden = !hasText;
+    if (!viewer.open) viewer.showModal();
+  }
+
+  function closeViewer() {
+    if (viewer.open) viewer.close();
+  }
+  viewer.addEventListener('close', () => {
+    revokeView();
+    $('v-stage').textContent = '';
+    viewId = null;
+    clearTimeout(textTimer);
+  });
+  viewer.addEventListener('click', (e) => { if (e.target === viewer) closeViewer(); });
+  $('v-close').onclick = closeViewer;
+
+  // Fix OCR mistakes: the text saves as you type
+  $('v-text').addEventListener('input', () => {
+    const f = findFile(viewId); if (!f) return;
+    f.text = $('v-text').value;
+    noteText = f.text;
+    $('v-copy').hidden = $('v-note').hidden = !f.text.trim();
+    $('v-saved').textContent = 'Saving…';
+    clearTimeout(textTimer);
+    textTimer = setTimeout(() => { save(); $('v-saved').textContent = 'Saved'; render(); }, 400);
+  });
+
+  $('v-copy').onclick = () => {
+    const t = $('v-side').hidden ? noteText : $('v-text').value;
+    if (!t.trim()) return;
+    navigator.clipboard.writeText(t).then(() => P.toast('Text copied.'), () => P.toast('Could not copy.'));
+  };
+
+  $('v-note').onclick = () => {
+    const f = findFile(viewId); if (!f) return;
+    const text = ($('v-side').hidden ? noteText : $('v-text').value).trim();
+    if (!text) return;
+    const NK = 'priority.notes'; // same storage as the Notes page
+    let notes = [];
+    try { const r = JSON.parse(localStorage.getItem(NK)); if (Array.isArray(r)) notes = r; } catch (e) {}
+    const now = Date.now();
+    notes.unshift({ id: uid(), title: f.name.slice(0, 100), body: text, hue: null, pinned: false, created: now, updated: now });
+    try { localStorage.setItem(NK, JSON.stringify(notes)); P.toast('Saved to Notes.'); }
+    catch (e) { P.toast('Could not save. Storage is full.'); }
+  };
+
+  $('v-dl').onclick = () => {
+    const f = findFile(viewId); if (!f) return;
+    const a = el('a'); a.href = f.data; a.download = f.name + extFor(f);
+    document.body.append(a); a.click(); a.remove();
+  };
+
+  $('v-del').onclick = () => {
+    const f = findFile(viewId); if (!f) return;
+    if (!confirm('Delete "' + f.name + '"? This cannot be undone.')) return;
+    closeViewer();
+    files = files.filter((x) => x.id !== f.id); save(); render();
+    P.toast('File deleted.');
+  };
+
+  /* =========================================================
+     Adding files
      ========================================================= */
   function addFiles(fileList) {
     const arr = [...fileList];
@@ -149,17 +270,19 @@
       reader.readAsDataURL(file);
     });
     function finish() {
+      filter.tab = 'files';
+      document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === 'files'));
       render();
       if (added) {
         P.toast('Added ' + added + ' file' + (added === 1 ? '' : 's') + '.');
         if (window.PriorityAchievements) PriorityAchievements.mark('fileUploaded');
       }
-      if (skipped) P.toast(skipped + ' file' + (skipped === 1 ? ' was' : +'s were') + ' too large.');
+      if (skipped) P.toast(skipped + ' file' + (skipped === 1 ? ' was' : 's were') + ' too large (max 4 MB).');
     }
   }
 
   /* =========================================================
-     Scanner
+     Scanning
      ========================================================= */
   const zone = $('scan-zone');
   const progress = $('scan-progress');
@@ -178,7 +301,7 @@
   async function scanPhoto(file) {
     if (!file) return;
     if (!/^image\//.test(file.type)) {
-      P.toast('That is not an image. Use Upload file for other types.');
+      P.toast('That is not an image. Use Upload other file for other types.');
       return;
     }
     if (file.size > MAX) {
@@ -216,7 +339,7 @@
           ? 'Scan · ' + (text.split('\n')[0].slice(0, 30) || 'note')
           : 'Scan · ' + stamp + ' ' + time;
 
-        files.push({
+        const rec = {
           id: uid(),
           name,
           size: file.size,
@@ -226,20 +349,25 @@
           scanned: true,
           text,
           addedAt: Date.now()
-        });
+        };
+        files.push(rec);
         save();
+
         setProgress(100, 'Done.');
         setTimeout(() => setProgress(null), 600);
         zone.classList.remove('scanning');
-        render();
-        P.toast(text
-          ? 'Scan complete. ' + text.length + ' characters extracted.'
-          : 'Photo saved, but no text was found.');
-        if (window.PriorityAchievements) PriorityAchievements.mark('fileUploaded');
 
         filter.tab = 'scans';
         document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === 'scans'));
         render();
+        if (window.PriorityAchievements) PriorityAchievements.mark('fileUploaded');
+
+        P.toast(text
+          ? 'Scan complete. ' + text.length + ' characters extracted.'
+          : 'Photo saved, but no text was found.');
+
+        // Open the result right here in the app
+        openViewer(rec);
       } catch (err) {
         console.error('[Scan]', err);
         setProgress(null);
@@ -255,7 +383,14 @@
     reader.readAsDataURL(file);
   }
 
-  /* Scanner interactions */
+  function removeFile(id) {
+    const i = files.findIndex((f) => f.id === id);
+    if (i < 0) return;
+    if (!confirm('Delete this file? This cannot be undone.')) return;
+    files.splice(i, 1); save(); render();
+    P.toast('File deleted.');
+  }
+
   zone.onclick = () => $('photo-input').click();
   $('pick-photo').onclick = () => $('photo-input').click();
   $('use-camera').onclick = () => $('camera-input').click();
@@ -284,68 +419,6 @@
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', (e) => { if (!e.target.closest('#scan-zone')) e.preventDefault(); });
 
-  /* =========================================================
-     Remove
-     ========================================================= */
-  function removeFile(id) {
-    const i = files.findIndex((f) => f.id === id);
-    if (i < 0) return;
-    if (!confirm('Delete this file? This cannot be undone.')) return;
-    files.splice(i, 1); save(); render(); $('preview').close();
-    P.toast('File deleted.');
-  }
-
-  /* =========================================================
-     Preview
-     ========================================================= */
-  const dlg = $('preview');
-  function openPreview(f) {
-    $('pv-name').textContent = f.name;
-    const body = $('pv-body'); body.textContent = '';
-
-    if (isScanned(f)) {
-      const wrap = el('div', 'scan-wrap');
-      if (f.data) {
-        const img = el('img'); img.src = f.data; img.alt = f.name;
-        wrap.append(img);
-      }
-      const pre = el('pre', null, f.text || '(no text)');
-      wrap.append(pre);
-      body.append(wrap);
-    } else if (f.type === 'image') {
-      const img = el('img'); img.src = f.data; img.alt = f.name; body.append(img);
-    } else if (f.type === 'audio') {
-      const a = el('audio'); a.controls = true; a.src = f.data; body.append(a);
-    } else if (f.type === 'video') {
-      const v = el('video'); v.controls = true; v.src = f.data; body.append(v);
-    } else if (f.type === 'pdf') {
-      const fr = el('iframe'); fr.src = f.data; fr.title = f.name; body.append(fr);
-    } else if (f.type === 'text' && !f.scanned) {
-      try {
-        const b64 = f.data.split(',')[1] || '';
-        const bin = atob(b64);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const text = new TextDecoder().decode(bytes);
-        body.append(el('pre', null, text.slice(0, 20000)));
-      } catch (e) {
-        body.append(el('div', 'nopv', 'Could not read this file.'));
-      }
-    } else {
-      const np = el('div', 'nopv');
-      np.innerHTML = icn('file', 32) + '<br>No preview available. Use Download to open it.';
-      body.append(np);
-    }
-
-    $('pv-meta').textContent = (LABEL[f.type] || 'File') + ' · ' + fmtSize(f.size) + ' · added ' + fmtDate(f.addedAt);
-    dlg.showModal();
-  }
-  $('pv-close').onclick = () => dlg.close();
-  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
-
-  /* =========================================================
-     Tabs, search, upload button
-     ========================================================= */
   document.querySelectorAll('.tab').forEach((t) => {
     t.addEventListener('click', () => {
       filter.tab = t.dataset.tab;
@@ -359,6 +432,5 @@
   $('upload-btn').onclick = () => $('file-input').click();
   $('file-input').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
 
-  /* Init */
   render();
 })();
