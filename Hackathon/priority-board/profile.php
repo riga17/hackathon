@@ -1,3 +1,4 @@
+<?php require 'auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +9,20 @@
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="profile.css">
   <script src="app.js"></script>
+  <style>
+    /* Extra styles for the new avatar picker */
+    .av-modes{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+    .av-modes button{border:1px solid var(--border);background:var(--bg);border-radius:99px;padding:7px 14px;cursor:pointer;font-weight:700;font-size:.85rem;color:var(--muted)}
+    .av-modes button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    .color-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .color-grid button{width:40px;height:40px;border-radius:50%;border:3px solid var(--surface);cursor:pointer;box-shadow:0 0 0 2px var(--border);padding:0}
+    .color-grid button.on{box-shadow:0 0 0 3px var(--text)}
+    .photo-zone{display:grid;gap:10px;justify-items:center;padding:10px 0}
+    .photo-zone img{max-width:140px;max-height:140px;border-radius:50%;object-fit:cover;box-shadow:0 4px 14px hsl(var(--h) 40% 30% / .15)}
+    .photo-zone label.btn{cursor:pointer;display:inline-block}
+    .photo-zone input[type=file]{display:none}
+    .avatar-img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+  </style>
 </head>
 <body>
 <div class="app">
@@ -19,7 +34,7 @@
       <button class="ib menu-btn" id="menu-btn" type="button" aria-label="Open menu">☰</button>
       <div class="ttl"><h1>My Profile</h1><p id="sub">Your personal corner of Priority.</p></div>
       <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
-      <a class="btn btn-primary" href="settings.html">Settings</a>
+      <a class="btn btn-primary" href="settings.php">Settings</a>
     </header>
 
     <!-- Profile hero -->
@@ -95,11 +110,11 @@
       <section class="card">
         <header class="card-head"><h2>Shortcuts</h2></header>
         <ul class="shortcuts">
-          <li><a href="tasks.html"><span>✅</span>My Tasks</a></li>
-          <li><a href="calendar.html"><span>📅</span>Calendar</a></li>
-          <li><a href="habits.html"><span>🌱</span>Habits &amp; Goals</a></li>
-          <li><a href="achievements.html"><span>🏆</span>Achievements</a></li>
-          <li><a href="settings.html"><span>⚙️</span>Settings</a></li>
+          <li><a href="tasks.php"><span>✅</span>My Tasks</a></li>
+          <li><a href="calendar.php"><span>📅</span>Calendar</a></li>
+          <li><a href="habits.php"><span>🌱</span>Habits &amp; Goals</a></li>
+          <li><a href="achievements.php"><span>🏆</span>Achievements</a></li>
+          <li><a href="settings.php"><span>⚙️</span>Settings</a></li>
         </ul>
       </section>
     </div>
@@ -110,11 +125,33 @@
 <dialog id="dlg">
   <form id="form" method="dialog">
     <h2>Edit profile</h2>
-    <label>Display name<input id="f-name" maxlength="30" required placeholder="Your name"></label>
-    <label>Avatar
+
+    <label>Display name<input id="f-name" maxlength="100" required placeholder="Your name"></label>
+
+    <div style="display:grid;gap:8px">
+      <span style="font-weight:700;font-size:.9rem">Avatar</span>
+      <div class="av-modes" id="av-modes">
+        <button type="button" data-mode="emoji">Emoji</button>
+        <button type="button" data-mode="photo">Photo</button>
+        <button type="button" data-mode="color">Color</button>
+      </div>
+
       <div class="avatar-grid" id="avatar-grid"></div>
-    </label>
+
+      <div class="color-grid" id="color-grid" style="display:none"></div>
+
+      <div class="photo-zone" id="photo-zone" style="display:none">
+        <img id="photo-preview" alt="Profile preview" style="display:none">
+        <label class="btn btn-line">
+          Choose photo
+          <input id="f-photo" type="file" accept="image/*">
+        </label>
+        <small style="color:var(--muted);font-size:.8rem">Max 4 MB. Saved to your account.</small>
+      </div>
+    </div>
+
     <label>Bio (optional)<textarea id="f-bio" maxlength="160" rows="3" placeholder="A sentence about you…"></textarea></label>
+
     <div class="dfoot">
       <button class="btn" id="f-cancel" type="button">Cancel</button>
       <button class="btn btn-primary" type="submit">Save</button>
@@ -126,7 +163,7 @@
 <dialog id="confirm">
   <form method="dialog">
     <h2>Reset everything?</h2>
-    <p class="muted">This clears tasks, habits, goals, achievements, files, and settings from this device. You cannot undo it.</p>
+    <p class="muted">This clears tasks, habits, goals, achievements, files, and settings from this device. It does <b>not</b> delete your account.</p>
     <div class="dfoot">
       <button class="btn" id="c-cancel" type="button">Cancel</button>
       <button class="btn btn-danger" id="c-confirm" type="button">Reset all</button>

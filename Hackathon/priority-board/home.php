@@ -1,3 +1,4 @@
+<?php require 'auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +22,7 @@
         <input id="quick-add" type="text" maxlength="80" placeholder="Add a task and press Enter…" required>
       </form>
       <button class="ib" id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
-      <a class="ib avatar" href="profile.html" aria-label="My profile" data-icon="user"></a>
+      <a class="ib avatar" href="profile.php" aria-label="My profile" data-icon="user"></a>
     </header>
 
     <!-- Hero -->
@@ -31,8 +32,8 @@
         <h1 id="hero-title">Priority</h1>
         <p class="hero-sub" id="hero-sub"></p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="tasks.html">Open my tasks</a>
-          <a class="btn" href="voice.html">Talk to the assistant</a>
+          <a class="btn btn-primary" href="tasks.php">Open my tasks</a>
+          <a class="btn" href="voice.php">Talk to the assistant</a>
         </div>
       </div>
       <div class="ring" id="ring" role="img" aria-label="Overall progress">
@@ -51,7 +52,7 @@
     <div class="grid">
       <!-- Today's focus -->
       <section class="card span-2">
-        <header class="card-head"><h2>Today's focus</h2><a href="tasks.html">See all</a></header>
+        <header class="card-head"><h2>Today's focus</h2><a href="tasks.php">See all</a></header>
         <ul class="list focus-list" id="focus-list"></ul>
       </section>
 
@@ -77,8 +78,8 @@
         <div class="mc-dow" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
         <div class="mc-days" id="mc-days"></div>
         <div class="mc-actions">
-          <a class="mc-open" href="calendar.html">Open full calendar</a>
-          <a class="mc-voice" href="voice.html">
+          <a class="mc-open" href="calendar.php">Open full calendar</a>
+          <a class="mc-voice" href="voice.php">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
             Talk to the assistant
           </a>
@@ -89,7 +90,7 @@
       <section class="card">
         <header class="card-head">
           <h2>Coming up</h2>
-          <a href="voice.html">Ask the assistant</a>
+          <a href="voice.php">Ask the assistant</a>
         </header>
         <ul class="list upcoming" id="upcoming"></ul>
       </section>

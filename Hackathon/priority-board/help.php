@@ -1,3 +1,4 @@
+<?php require 'auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,10 +54,10 @@
       <section class="card">
         <header class="card-head"><h2>Still stuck?</h2></header>
         <p class="muted">Priority is a personal project, built to help you feel calmer about your day. If something's not working, try refreshing the page first — most issues clear up on a reload.</p>
-        <p class="muted">Your data lives in your browser. If a page acts up, exporting a backup from <a href="settings.html">Settings</a> and then clearing storage can fix most stubborn issues.</p>
+        <p class="muted">Your data lives in your browser. If a page acts up, exporting a backup from <a href="settings.php">Settings</a> and then clearing storage can fix most stubborn issues.</p>
         <div class="contact-row">
-          <a class="btn btn-primary" href="settings.html">Open Settings</a>
-          <a class="btn" href="profile.html">Backup data</a>
+          <a class="btn btn-primary" href="settings.php">Open Settings</a>
+          <a class="btn" href="profile.php">Backup data</a>
         </div>
       </section>
     </div>

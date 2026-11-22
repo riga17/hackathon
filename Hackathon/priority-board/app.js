@@ -236,22 +236,23 @@
      ========================================================= */
   const NAV = [
     ['Workspace'],
-    ['Dashboard', 'home', 'home.html'],
-    ['My Tasks', 'checkCircle', 'tasks.html'],
-    ['Calendar', 'calendar', 'calendar.html'],
-    ['Focus Mode', 'target', 'focus.html'],
-    ['Study Center', 'book', 'study.html'],
-    ['Notes', 'note', 'notes.html'],
-    ['Habits &amp; Goals', 'sprout', 'habits.html'],
-    ['Statistics', 'chart', 'stats.html'],
+    ['Dashboard', 'home', 'home.php'],
+    ['My Tasks', 'checkCircle', 'tasks.php'],
+    ['Calendar', 'calendar', 'calendar.php'],
+    ['Focus Mode', 'target', 'focus.php'],
+    ['Study Center', 'book', 'study.php'],
+    ['Notes', 'note', 'notes.php'],
+    ['Habits &amp; Goals', 'sprout', 'habits.php'],
+    ['Statistics', 'chart', 'stats.php'],
     ['Personal tools'],
-    ['Voice Assistant', 'mic', 'voice.html'],
-    ['Scanner', 'paperclip', 'attachments.html'],
-    ['Reminders', 'bell', 'reminders.html'],
-    ['Achievements', 'trophy', 'achievements.html'],
-    ['My Profile', 'user', 'profile.html'],
-    ['Settings', 'settings', 'settings.html'],
-    ['Help Center', 'help', 'help.html']
+    ['Voice Assistant', 'mic', 'voice.php'],
+    ['Scanner', 'paperclip', 'attachments.php'],
+    ['Reminders', 'bell', 'reminders.php'],
+    ['Achievements', 'trophy', 'achievements.php'],
+    ['My Profile', 'user', 'profile.php'],
+    ['Settings', 'settings', 'settings.php'],
+    ['Help Center', 'help', 'help.php'],
+    ['Log out', 'x', 'logout.php']
   ];
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -262,9 +263,9 @@
        ========================================================= */
     const slot = document.getElementById('nav-slot');
     if (slot) {
-      const page = location.pathname.split('/').pop() || 'home.html';
+      const page = location.pathname.split('/').pop() || 'home.php';
       slot.innerHTML =
-        '<a class="brand" href="home.html"><b>' + icon('check', 18) + '</b>Priority</a>' +
+        '<a class="brand" href="home.php"><b>' + icon('check', 18) + '</b>Priority</a>' +
         '<nav aria-label="Main">' +
         NAV.map((n) => n.length === 1
           ? '<p class="grp">' + n[0] + '</p>'
@@ -315,7 +316,7 @@
       if (mb) mb.addEventListener('click', () => menu(!slot.classList.contains('open')));
       if (sc) sc.addEventListener('click', () => menu(false));
 
-      /* Coming-soon links (Study Center, Focus Mode, Notes until built) */
+      /* Coming-soon links */
       slot.querySelectorAll('[data-soon]').forEach((a) => a.addEventListener('click', (e) => {
         e.preventDefault();
         toast(a.textContent.trim() + ' is coming soon.');

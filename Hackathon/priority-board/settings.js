@@ -30,13 +30,43 @@
         '" style="--c:hsl(' + h + ' 85% 56%)" aria-label="' + n + '" title="' + n + '"></button>'
       ).join('');
 
-    $('tracks').innerHTML = P.music.tracks
-      .map((t) =>
-        '<button class="track' + (P.music.on() && s.track === t.id ? ' on' : '') +
-        '" data-t="' + t.id + '">' +
-        '<b>' + t.name + '</b><small>' + t.desc + '</small>' +
-        '</button>'
-      ).join('');
+    // ---- Music section (YouTube) ----
+    const musicBox = $('tracks');
+    if (musicBox) {
+      let last = '';
+      try { last = localStorage.getItem('priority.yt.last') || ''; } catch (e) {}
+      musicBox.innerHTML =
+        '<div style="display:grid;gap:10px;grid-column:1/-1">' +
+          '<label class="sr-only" for="yt-link">YouTube link</label>' +
+          '<input id="yt-link" type="text" placeholder="Paste a YouTube link or video ID…" ' +
+            'value="' + (last ? last.replace(/"/g, '&quot;') : '') + '" ' +
+            'style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:11px 14px;color:var(--text);font:inherit">' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            '<button class="btn btn-primary" id="yt-play" type="button">Play</button>' +
+            '<button class="btn" id="yt-stop" type="button">Stop</button>' +
+          '</div>' +
+          '<p class="hint" id="yt-status" style="margin:0"></p>' +
+        '</div>';
+
+      const link = $('yt-link');
+      $('yt-play').addEventListener('click', () => {
+        const v = link.value.trim();
+        if (!v) { P.toast('Paste a YouTube link first.'); return; }
+        try { localStorage.setItem('priority.yt.last', v); } catch (e) {}
+        if (P.music.play(v)) $('yt-status').textContent = 'Loading…';
+        else P.toast('That link does not look like a YouTube video.');
+      });
+      $('yt-stop').addEventListener('click', () => {
+        P.music.stop();
+        $('yt-status').textContent = 'Stopped.';
+      });
+
+      const syncStatus = () => {
+        $('yt-status').textContent = P.music.on() ? 'Playing in this page.' : 'Nothing playing.';
+      };
+      syncStatus();
+      window.addEventListener('musicchange', syncStatus);
+    }
 
     $('hue').value = s.hue;
     $('vol').value = s.vol;
@@ -65,14 +95,7 @@
   });
   $('hue').addEventListener('change', draw);
 
-  /* Music */
-  $('tracks').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-t]'); if (!b) return;
-    if (P.music.on() && P.get().track === b.dataset.t) P.music.stop();
-    else P.music.play(b.dataset.t);
-    draw();
-  });
-
+  /* Volume (applies to YouTube player) */
   $('vol').addEventListener('input', (e) => {
     P.music.setVol(+e.target.value);
     $('vol-lbl').textContent = 'Volume · ' + Math.round(e.target.value * 100) + '%';
@@ -114,13 +137,21 @@
       'priorityAttachments.v1',
       'priorityReminders.v1',
       'priorityProfile.v1',
-      'priority.settings'
+      'priority.settings',
+      'priority.notes',
+      'priority.study',
+      'priority.voice',
+      'priorityConversations.v1',
+      'priorityActiveChat.v1',
+      'priority.yt.last'
     ];
     const data = {};
     keys.forEach((k) => {
       try {
         const v = localStorage.getItem(k);
-        if (v != null) data[k] = JSON.parse(v);
+        if (v != null) {
+          try { data[k] = JSON.parse(v); } catch (e) { data[k] = v; }
+        }
       } catch (e) {}
     });
     data.exportedAt = new Date().toISOString();
@@ -140,7 +171,6 @@
     P.set({
       hue: 335,
       vol: 0.4,
-      track: 'rain',
       cueSounds: false,
       notifyReminders: false,
       defaultList: 'later',
@@ -166,7 +196,13 @@
       'priorityAttachments.v1',
       'priorityReminders.v1',
       'priorityProfile.v1',
-      'priority.settings'
+      'priority.settings',
+      'priority.notes',
+      'priority.study',
+      'priority.voice',
+      'priorityConversations.v1',
+      'priorityActiveChat.v1',
+      'priority.yt.last'
     ].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
     P.toast('All data cleared. Reloading…');
     setTimeout(() => location.reload(), 900);
